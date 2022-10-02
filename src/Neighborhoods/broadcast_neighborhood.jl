@@ -32,7 +32,7 @@ sides, or be the same size, in which case it is assumed to also be padded.
 """
 function broadcast_neighborhood!(f, hood::Neighborhood, dest, sources...)
     _checksizes(sources)
-    if axes(dest) === axes(first(src))
+    if axes(dest) === axes(first(sources))
         destview = unpad_view(dest, hood)
         broadcast!(destview, CartesianIndices(destview)) do I
             applyneighborhood(f, hood, sources, I)

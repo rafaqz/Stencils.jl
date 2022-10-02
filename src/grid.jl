@@ -16,7 +16,7 @@ for optimisations.
 - `R`: grid padding radius 
 - `T`: grid data type
 """
-abstract type GridData{S,R,T,N} <: StaticArray{S,T,N} end
+abstract type GridData{S,R,T,N} <: Neighborhoods.AbstractNeighborhoodArray{S,R,T,N} end
 
 function (::Type{G})(d::GridData{S,R,T,N}) where {G<:GridData,S,R,T,N}
     args = source(d), dest(d), mask(d), proc(d), opt(d), boundary(d), padval(d), optdata(d)
@@ -25,13 +25,6 @@ end
 function ConstructionBase.constructorof(::Type{T}) where T<:GridData{S,R} where {S,R}
     T.name.wrapper{S,R}
 end
-
-# Return a SizedArray with similar, instead of a StaticArray
-Base.similar(A::GridData) = similar(sourceview(A))
-Base.similar(A::GridData, ::Type{T}) where T = similar(sourceview(A), T)
-Base.similar(A::GridData, I::Tuple{Int,Vararg{Int}}) = similar(sourceview(A), I)
-Base.similar(A::GridData, ::Type{T}, I::Tuple{Int,Vararg{Int}}) where T =
-    similar(sourceview(A), T, I)
 
 # Getters
 radius(d::GridData{<:Any,R}) where R = R
@@ -56,8 +49,6 @@ gridview(d::GridData) = sourceview(d)
 sourceview(d::GridData) = _unpad_view(source(d), d)
 # Get a view of the grid dest, without padding
 destview(d::GridData) = _unpad_view(dest(d), d)
-
-_unpad_view(A, d::GridData) = view(A, axes(d)...)
 
 # Get an a view of the source, preferring the underlying array if it is not a padded OffsetArray
 source_array_or_view(d::GridData) = source(d) isa OffsetArray ? sourceview(d) : source(d)

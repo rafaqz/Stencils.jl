@@ -11,6 +11,7 @@ end
 opts = (NoOpt(), SparseOpt())
 
 # proc = CPUGPU()
+proc = CuGPU()
 proc = SingleCPU()
 # opt = SparseOpt()
 opt = NoOpt()
@@ -183,15 +184,15 @@ test = test5_6
     nothing
 end
 
-@testset "Life simulation with Remove boudary" begin
-    init_ =     DimArray(Bool[
+@testset "Life simulation with Remove boundary" begin
+    init_ =     Bool[
                  0 0 0 0 0 0 0
                  0 0 0 0 1 1 1
                  0 0 0 0 0 0 1
                  0 0 0 0 0 1 0
                  0 0 0 0 0 0 0
                  0 0 0 0 0 0 0
-                ], (X, Y))
+                ]
     test2_rem = Bool[
                  0 0 0 0 0 1 0
                  0 0 0 0 0 1 1

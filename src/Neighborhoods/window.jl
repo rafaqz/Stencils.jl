@@ -26,14 +26,14 @@ N = 1   N = 2
         ▀▀▀▀▀
 ```
 """
-struct Window{R,N,L,W} <: Neighborhood{R,N,L}
-    _window::W
+struct Window{R,N,L,T} <: Neighborhood{R,N,L}
+    _neighbors::T
 end
 Window(; radius=1, ndims=2) = Window{radius,ndims}(args...)
 Window(R::Int, args...; ndims=2) = Window{R,ndims}(args...)
-Window{R}(_window=nothing; ndims=2) where {R} = Window{R,ndims}(_window)
-Window{R,N}(_window=nothing) where {R,N} = Window{R,N,(2R+1)^N}(_window)
-Window{R,N,L}(_window::W=nothing) where {R,N,L,W} = Window{R,N,L,W}(_window)
+Window{R}(_neighbors=nothing; ndims=2) where {R} = Window{R,ndims}(_neighbors)
+Window{R,N}(_neighbors=nothing) where {R,N} = Window{R,N,(2R+1)^N}(_neighbors)
+Window{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Window{R,N,L,T}(_neighbors)
 Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
 
 # The central cell is included
@@ -42,11 +42,4 @@ Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
     ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N)
 end
 
-distances(hood::Window) = Tuple(window_distances(hood))
-
-@inline setwindow(::Window{R,N,L}, win::W2) where {R,N,L,W2} = Window{R,N,L,W2}(win)
-
-window_indices(hood::Window{R,N}) where {R,N} = SOneTo{(2R + 1)^N}()
-
-neighbors(hood::Window) = _window(hood)
-
+@inline setneighbors(::Window{R,N,L}, _neighbors::T2) where {R,N,L,T2} = Window{R,N,L,T2}(_neighbors)

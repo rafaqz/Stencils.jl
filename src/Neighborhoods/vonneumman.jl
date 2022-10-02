@@ -29,21 +29,21 @@ In 1 dimension it is identical to [`Moore`](@ref).
 Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
 compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,W} <: Neighborhood{R,N,L}
-    _window::W
+struct VonNeumann{R,N,L,T} <: Neighborhood{R,N,L}
+    _neighbors::T
 end
 VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)
-VonNeumann(radius, _window=nothing; ndims=2) = VonNeumann{radius,ndims}(_window)
-VonNeumann{R}(_window=nothing; ndims=2) where R = VonNeumann{R,ndims}(_window)
-function VonNeumann{R,N}(_window=nothing) where {R,N}
+VonNeumann(radius, _neighbors=nothing; ndims=2) = VonNeumann{radius,ndims}(_neighbors)
+VonNeumann{R}(_neighbors=nothing; ndims=2) where R = VonNeumann{R,ndims}(_neighbors)
+function VonNeumann{R,N}(_neighbors=nothing) where {R,N}
     L = 2sum(1:R) + 2R
-    VonNeumann{R,N,L}(_window)
+    VonNeumann{R,N,L}(_neighbors)
 end
-VonNeumann{R,N,L}(_window::W=nothing) where {R,N,L,W} = VonNeumann{R,N,L,W}(_window)
+VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_neighbors)
 
-@inline setwindow(n::VonNeumann{R,N,L}, win::W2) where {R,N,L,W2} = VonNeumann{R,N,L,W2}(win)
+@inline setneighbors(n::VonNeumann{R,N,L}, _neighbors::T2) where {R,N,L,T2} = VonNeumann{R,N,L,T2}(_neighbors)
 
-@generated function offsets(::Type{T}) where {T<:VonNeumann{R,N}} where {R,N}
+@generated function offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}
     offsets_expr = Expr(:tuple)
     rngs = ntuple(_ -> -R:R, N)
     for I in CartesianIndices(rngs)

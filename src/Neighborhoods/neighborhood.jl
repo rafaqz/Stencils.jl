@@ -25,26 +25,34 @@ ConstructionBase.constructorof(::Type{<:T}) where T <: Neighborhood{R,N,L} where
     T.name.wrapper{R,N,L}
 
 """
-    kernelproduct(rule::NeighborhoodRule})
     kernelproduct(hood::AbstractKernelNeighborhood)
     kernelproduct(hood::Neighborhood, kernel)
 
 Returns the vector dot product of the neighborhood and the kernel,
-although differing from `dot` in that the dot product is not take for
+although differing from `dot` in that the dot product is not taken for
 vector members of the neighborhood - they are treated as scalars.
 """
 function kernelproduct end
 
 """
-    radius(rule, [key]) -> Int
+    radius(neighborhood) -> Int
 
-Return the radius of a rule or ruleset if it has one, otherwise zero.
+Return the radius of a neighborhood.
 """
 function radius end
 radius(hood::Neighborhood{R}) where R = R
 
+
 """
-    neighbors(x::Union{Neighborhood,NeighborhoodRule}}) -> iterable
+    diameter(rule) -> Int
+
+The diameter of a neighborhood is `2r + 1` where `r` is the radius.
+"""
+diameter(hood::Neighborhood{R}) where R = diameter(R)
+diameter(radius::Integer) = 2radius + 1
+
+"""
+    neighbors(x::Neighborhood) -> iterable
 
 Returns an indexable iterator for all cells in the neighborhood,
 either a `Tuple` of values or a range.
@@ -52,34 +60,28 @@ either a `Tuple` of values or a range.
 Custom `Neighborhood`s must define this method.
 """
 function neighbors end
-neighbors(hood::Neighborhood) = begin
-    w = _window(hood)
-    map(i -> w[i], window_indices(hood))
-end
+neighbors(hood::Neighborhood) = hood._neighbors
 
 """
     offsets(x) -> iterable
 
-Returns an indexable iterable over all cells, containing `Tuple`s of
-the index offset from the central cell.
+Returns an indexable iterable over all cells in the neighborhood,
+containing `Tuple`s of the offset from the central cell.
 
 Custom `Neighborhood`s must define this method.
 """
 function offsets end
-offsets(hood::Neighborhood) = offsets(typeof(hood))
-_window(hood::Neighborhood) = hood._window
-
+offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = offsets(typeof(hood))::NTuple{L,NTuple{N,Int}}
+    
 """
-    positions(x::Union{Neighborhood,NeighborhoodRule}}, cellindex::Tuple) -> iterable
+    indices(x::Union{Neighborhood,NeighborhoodRule}}, I::Tuple) -> iterable
 
-Returns an indexable iterable, over all cells as `Tuple`s of each
-index in the main array. Useful in `SetNeighborhoodRule` for
-setting neighborhood values, or for getting values in an Aux array.
+Returns an indexable iterable of `Tuple` indices of each neighbor in the main array.
 """
-function positions end
-@inline positions(hood::Neighborhood, I::CartesianIndex) = positions(hood, Tuple(I))
-@inline positions(hood::Neighborhood, I::Int...) = positions(hood, I)
-@inline positions(hood::Neighborhood, I::Tuple) = map(o -> o .+ I, offsets(hood))
+function indices end
+@inline indices(hood::Neighborhood, I::CartesianIndex) = indices(hood, Tuple(I))
+@inline indices(hood::Neighborhood, I::Int...) = indices(hood, I)
+indices(hood::Neighborhood, I) = (O .+ I for O in offsets(hood))
 
 """
     distances(hood::Neighborhood)
@@ -88,64 +90,33 @@ Get the center-to-center distance of each neighborhood position from the central
 so that horizontally or vertically adjacent cells have a distance of `1.0`, and a
 diagonally adjacent cell has a distance of `sqrt(2.0)`.
 
-Vales are calculated at compile time, so `distances` can be used inside rules with little
-overhead.
+Values are calculated at compile time, so `distances` can be used with little overhead.
 """
 @generated function distances(hood::Neighborhood{R,N,L}) where {R,N,L}
-    expr = Expr(:tuple, ntuple(i -> :(bd[bi[$i]]), L)...)
-    return quote
-        bd = window_distances(hood)
-        bi = window_indices(hood)
-        $expr
+    args = map(offsets(hood)) do O
+        sqrt(sum(o -> o^2, O))
     end
+    return Expr(:tuple, args...)
 end
 
-@generated function window_indices(H::Neighborhood{R,N}) where {R,N}
-    # Offsets can be anywhere in the window, specified with
-    # all dimensions. Here we transform them to a linear index.
-    bi = map(offsets(H)) do o
-        # Calculate strides
-        S = 2R + 1
-        strides = ntuple(i -> S^(i-1), N)
-        # Offset indices are centered, we want them as regular array indices
-        # Return the linear index in the square window
-        sum(map((i, s) -> (i + R) * s, o, strides)) + 1
-    end
-    return Expr(:tuple, bi...)
-end
-
-@generated function window_distances(hood::Neighborhood{R,N}) where {R,N}
-    values = map(CartesianIndices(ntuple(_ -> SOneTo{2R+1}(), N))) do I
-        sqrt(sum((Tuple(I) .- (R + 1)) .^ 2))
-    end
-    x = SArray(values)
-    quote
-        return $x
-    end
-end
-
-cartesian_offsets(hood::Neighborhood{R,N,L}) where {R,N,L} = map(CartesianIndex, offsets(hood))
-
-Base.eltype(hood::Neighborhood) = eltype(_window(hood))
-Base.length(hood::Neighborhood{<:Any,<:Any,L}) where L = L
+Base.eltype(hood::Neighborhood) = eltype(neighbors(hood))
+Base.length(hood::Neighborhood) = length(typeof(hood))
+Base.length(::Type{<:Neighborhood{<:Any,<:Any,L}}) where L = L
 Base.ndims(hood::Neighborhood{<:Any,N}) where N = N
-# Note: size is radial, and may not relate to `length` in the same way
-# as in an array. A neighborhood does not have to include all cells includeding
+# Note: size may not relate to `length` in the same way
+# as in an array. A neighborhood does not have to include all cells
 # in the area covered by `size` and `axes`.
 Base.size(hood::Neighborhood{R,N}) where {R,N} = ntuple(_ -> 2R+1, N)
 Base.axes(hood::Neighborhood{R,N}) where {R,N} = ntuple(_ -> SOneTo{2R+1}(), N)
-Base.iterate(hood::Neighborhood) = hood[1], 2
-Base.iterate(hood::Neighborhood, i::Int) = i > length(hood) ? nothing : (hood[i], i + 1)
-Base.getindex(hood::Neighborhood, i) = begin
-    getindex(_window(hood), window_indices(hood)[i])
+Base.iterate(hood::Neighborhood, args...) = iterate(neighbors(hood), args...)
+Base.getindex(hood::Neighborhood, i) = neighbors(hood)[i]
+function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R}) where R
+    println(typeof(hood))
+    bools = Bool[((i, j) in offsets(hood)) for i in -R:R, j in -R:R]
+    print(io, UnicodeGraphics.blockize(bools))
 end
 
 # Utils
-
-# Get the size of a neighborhood dimension from its radius,
-# which is always 2r + 1.
-@inline hoodsize(hood::Neighborhood{R}) where R = hoodsize(R)
-@inline hoodsize(radius::Integer) = 2radius + 1
 
 # Copied from StaticArrays. If they can do it...
 Base.@pure function tuple_contents(::Type{X}) where {X<:Tuple}
@@ -154,103 +125,54 @@ end
 tuple_contents(xs::Tuple) = xs
 
 """
-    unsafe_readwindow(hood::Neighborhood, A::AbstractArray, I) => SArray
+    readneighbors(hood::Neighborhood, A::AbstractArray, I) => SArray
 
-Get a single window square from an array, as an `SArray`, checking bounds.
+Get a single neighborhood from an array, as a `Tuple`, checking bounds.
 """
-readwindow(hood::Neighborhood, A::AbstractArray, I::Int...) = readwindow(hood, A, I)
-@inline function readwindow(hood::Neighborhood{R,N}, A::AbstractArray, I) where {R,N}
+readneighbors(hood::Neighborhood, A::AbstractArray, I::Int...) = readneighbors(hood, A, I)
+@inline function readneighbors(hood::Neighborhood{R,N}, A::AbstractArray, I) where {R,N}
     for O in ntuple(_ -> (-R, R), N)
         edges = Tuple(I) .+ O
         map(I -> checkbounds(A, I...), edges)
     end
-    return unsafe_readwindow(hood, A, I...)
+    return unsafe_readneighbors(hood, A, I...)
 end
 
 """
-    unsafe_readwindow(hood::Neighborhood, A::AbstractArray, I) => SArray
+    unsafe_readneighbors(hood::Neighborhood, A::AbstractArray, I) => SArray
 
-Get a single window square from an array, as an `SArray`, without checking bounds.
+Get a single neighborhood from an array, as a `Tuple`, without checking bounds.
 """
-@inline unsafe_readwindow(hood::Neighborhood, A::AbstractArray, I::CartesianIndex) =
-    unsafe_readwindow(hood, A, Tuple(I))
-@inline unsafe_readwindow(hood::Neighborhood, A::AbstractArray, I::Int...) =
-    unsafe_readwindow(hood, A, I)
-@generated function unsafe_readwindow(
-    ::Neighborhood{R,N}, A::AbstractArray{T,N}, I::NTuple{N,Int}
-) where {T,R,N}
-    S = 2R+1
-    L = S^N
-    sze = ntuple(_ -> S, N)
-    vals = Expr(:tuple)
-    nh = CartesianIndices(ntuple(_ -> -R:R, N))
-    for i in 1:L
-        Iargs = map(Tuple(nh[i]), 1:N) do nhi, n
-            :(I[$n] + $nhi)
-        end
-        Iexp = Expr(:tuple, Iargs...)
-        exp = :(@inbounds A[$Iexp...])
-        push!(vals.args, exp)
-    end
-
-    sze_exp = Expr(:curly, :Tuple, sze...)
-    return :(SArray{$sze_exp,$T,$N,$L}($vals))
+@inline unsafe_readneighbors(hood::Neighborhood, A::AbstractArray, I::CartesianIndex) =
+    unsafe_readneighbors(hood, A, Tuple(I))
+@inline unsafe_readneighbors(hood::Neighborhood, A::AbstractArray, I::Int...) =
+    unsafe_readneighbors(hood, A, I)
+@inline function unsafe_readneighbors(::Neighborhood{R,N}, A::AbstractArray{T,N}, I::NTuple{N,Int}) where {T,R,N}
+    map(P -> A[P...], positions(hood, I))
 end
-@generated function unsafe_readwindow(
+function unsafe_readneighbors(
     ::Neighborhood{R,N1}, A::AbstractArray{T,N2}, I::NTuple{N3,Int}
 ) where {T,R,N1,N2,N3}
     throw(DimensionMismatch("neighborhood has $N1 dimensions while array has $N2 and index has $N3"))
 end
 
-# Reading windows without padding
-# struct Padded{S,V}
-#     padval::V
-# end
-# Padded{S}(padval::V) where {S,V} = Padded{S,V}(padval)
-
-# @generated function unsafe_readwindow(
-#     ::Neighborhood{R,N}, bounds::Padded{V}, ::AbstractArray{T,N}, I::NTuple{N,Int}
-# ) where {T,R,N,V}
-#     R = 1
-#     S = 2R+1
-#     L = S^N
-#     sze = ntuple(_ -> S, N)
-#     vals = Expr(:tuple)
-#     for X in CartesianIndices(ntuple(_ -> -R:R, N))
-#         if X in CartesianIndices(V)
-#             # Generate indices for this position
-#             Iargs = map(Tuple(X), 1:N) do x, n
-#                 :(I[$n] + $x)
-#             end
-#             Iexp = Expr(:tuple, Iargs...)
-#             push!(vals.args, :(@inbounds A[$Iexp...]))
-#         else
-#             push!(vals.args, :(bounds.padval))
-#         end
-#     end
-
-#     sze_exp = Expr(:curly, :Tuple, sze...)
-#     return :(SArray{$sze_exp,$T,$N,$L}($vals))
-# end
-
 """
-    updatewindow(x, A::AbstractArray, I...) => Neighborhood
+    updateneighbors(x, A::AbstractArray, I...) => Neighborhood
 
-Set the window of a neighborhood to values from the array A around index `I`.
-
-Bounds checks will reduce performance, aim to use `unsafe_setwindow` directly.
+Set the neighbors of a neighborhood to values from the array A around index `I`.
+Bounds checks will reduce performance, aim to use `unsafe_setneighbors` directly.
 """
-@inline function updatewindow(x, A::AbstractArray, i, I...)
-    setwindow(x, readwindow(x, A, i, I...))
+@inline function updateneighbors(x, A::AbstractArray, i, I...)
+    setneighbors(x, readneighbors(x, A, i, I...))
 end
 
 """
-    unsafe_setwindow(x, A::AbstractArray, I...) => Neighborhood
+    unsafe_updateneighbors(x, A::AbstractArray, I...) => Neighborhood
 
-Set the window of a neighborhood to values from the array A around index `I`.
+Set the neighbors of a neighborhood to values from the array A around index `I`.
 
 No bounds checks occur, ensure that A has padding of at least the neighborhood radius.
 """
-@inline function unsafe_updatewindow(h::Neighborhood, A::AbstractArray, i, I...)
-    setwindow(h, unsafe_readwindow(h, A, i, I...))
+@inline function unsafe_updateneighbors(h::Neighborhood, A::AbstractArray, i, I...)
+    setneighbors(h, unsafe_readneighbors(h, A, i, I...))
 end
