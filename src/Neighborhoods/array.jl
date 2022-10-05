@@ -5,7 +5,7 @@ abstract type AbstractNeighborhoodArray{S,R,T,N} <: StaticArray{S,T,N} end
 """
     NeighborhoodArray
 
-An 
+An array with padding, known size, a [`Neighborhood`](@ref) and a [BoundaryCondition](@ref). 
 """
 struct NeighborhoodArray{S,R,T,N,A<:AbstractArray{T,N},BC,PV,H}
     parent::A
@@ -41,5 +41,5 @@ Base.similar(A::AbstractNeighborhoodArray, ::Type{T}, I::Tuple{Int,Vararg{Int}})
     similar(_unpad_view(A), T, I)
 
 _unpad_view(A::AbstractNeighborhoodArray) = view(parent(A), axes(A)...)
-_unpad_view(A, N::AbstractNeighborhoodArray) = view(A, axes(d)...)
+_unpad_view(A, N::AbstractNeighborhoodArray) = view(A, axes(N)...)
 

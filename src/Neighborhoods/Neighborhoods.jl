@@ -13,7 +13,7 @@ export neighbors, neighborhood, kernel, kernelproduct, offsets, positions, radiu
 
 export setwindow, updatewindow, unsafe_updatewindow
 
-export pad_axes, unpad_axes, pad_array, unpad_array, unpad_view
+export pad_axes, inner_axes, pad_array, inner_array, inner_view
 
 export broadcast_neighborhood, broadcast_neighborhood!
 
@@ -21,12 +21,13 @@ include("neighborhood.jl")
 include("array.jl")
 include("boundary.jl")
 include("padding.jl")
-include("moore.jl")
-include("positional.jl")
-include("vonneumman.jl")
-include("window.jl")
-include("kernel.jl")
 include("broadcast_neighborhood.jl")
+
+include("neighborhoods/moore.jl")
+include("neighborhoods/positional.jl")
+include("neighborhoods/vonneumman.jl")
+include("neighborhoods/window.jl")
+include("neighborhoods/kernel.jl")
 
 end # Module Neighborhoods
 

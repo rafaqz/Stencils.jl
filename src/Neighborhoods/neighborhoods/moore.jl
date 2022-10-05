@@ -42,9 +42,12 @@ Moore{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Moore{R,N,L,T}(_neighbors)
 
 @generated function offsets(::Type{<:Moore{R,N,L}}) where {R,N,L}
     exp = Expr(:tuple)
+    # First half
     for I in CartesianIndices(ntuple(_-> -R:R, N))[1:L÷2]
         push!(exp.args, :($(Tuple(I))))
     end
+    # Skip the middle position
+    # Second half
     for I in CartesianIndices(ntuple(_-> -R:R, N))[L÷2+2:L+1]
         push!(exp.args, :($(Tuple(I))))
     end

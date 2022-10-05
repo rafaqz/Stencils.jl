@@ -1,9 +1,9 @@
 """
-    VonNeumann(radius=1; ndims=2) -> Positional
-    VonNeumann(; radius=1, ndims=2) -> Positional
-    VonNeumann{R,N}() -> Positional
+    VonNeumann(1; ndims=2)
+    VonNeumann(; radius=1, ndims=2)
+    VonNeumann{R,N}()
 
-A Von Neuman neighborhood is a damond-shaped, omitting the central cell:
+A 2 dimensionsl Von Neumann neighborhood is a damond-shaped, omitting the central cell:
 
 Radius `R = 1`:
 
@@ -36,7 +36,7 @@ VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)
 VonNeumann(radius, _neighbors=nothing; ndims=2) = VonNeumann{radius,ndims}(_neighbors)
 VonNeumann{R}(_neighbors=nothing; ndims=2) where R = VonNeumann{R,ndims}(_neighbors)
 function VonNeumann{R,N}(_neighbors=nothing) where {R,N}
-    L = 2sum(1:R) + 2R
+    L = delannoy(N, R) - 1
     VonNeumann{R,N,L}(_neighbors)
 end
 VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_neighbors)
@@ -55,3 +55,12 @@ VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_
     return offsets_expr
 end
 
+# Utils
+
+# delannoy 
+# Calculate delannoy numbers recursively
+# (gives the length of a VonNeumann neighborhood + center)
+function delannoy(a, b)
+    (a == 0 || b == 0) && return 1
+    return delannoy(a−1, b) + delannoy(a, b−1) + delannoy(a−1, b−1) 
+end
