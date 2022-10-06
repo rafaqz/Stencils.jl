@@ -29,7 +29,7 @@ In 1 dimension it is identical to [`Moore`](@ref).
 Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
 compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,T} <: Neighborhood{R,N,L}
+struct VonNeumann{R,N,L,T<:Union{Nothing,<:Tuple}} <: Neighborhood{R,N,L}
     _neighbors::T
 end
 VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)

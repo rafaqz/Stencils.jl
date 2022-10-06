@@ -31,7 +31,7 @@ N = 1   N = 2
 Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
 compated to passing arguments/keywords.
 """
-struct Moore{R,N,L,T} <: Neighborhood{R,N,L}
+struct Moore{R,N,L,T<:Union{Nothing,<:Tuple}} <: Neighborhood{R,N,L}
     _neighbors::T
 end
 Moore(radius::Int=1; ndims=2) = Moore{radius,ndims}()

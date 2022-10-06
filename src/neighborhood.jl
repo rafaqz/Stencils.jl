@@ -81,7 +81,14 @@ Returns an indexable iterable of `Tuple` indices of each neighbor in the main ar
 function indices end
 @inline indices(hood::Neighborhood, I::CartesianIndex) = indices(hood, Tuple(I))
 @inline indices(hood::Neighborhood, I::Int...) = indices(hood, I)
-indices(hood::Neighborhood, I) = (O .+ I for O in offsets(hood))
+@generated function indices(hood::Neighborhood, I)
+    args = map(O -> :(map(+, $O, I)), offsets(hood)) 
+    return Expr(:tuple, args...)
+end
+
+struct LazyNeighors{T,N,L,A<:AbstractKernelNeighborhood{T,N,},H<:Neighborhood{<:Any,<:Any,L}}
+    A::A
+end
 
 """
     distances(hood::Neighborhood)
@@ -114,6 +121,10 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R}) where 
     println(typeof(hood))
     bools = Bool[((i, j) in offsets(hood)) for i in -R:R, j in -R:R]
     print(io, UnicodeGraphics.blockize(bools))
+    if !isnothing(neighbors(hood)) 
+        println(io)
+        show(io, mime, neighbors(hood))
+    end
 end
 
 # Utils
@@ -147,8 +158,10 @@ Get a single neighborhood from an array, as a `Tuple`, without checking bounds.
     unsafe_readneighbors(hood, A, Tuple(I))
 @inline unsafe_readneighbors(hood::Neighborhood, A::AbstractArray, I::Int...) =
     unsafe_readneighbors(hood, A, I)
-@inline function unsafe_readneighbors(::Neighborhood{R,N}, A::AbstractArray{T,N}, I::NTuple{N,Int}) where {T,R,N}
-    map(P -> A[P...], positions(hood, I))
+@inline function unsafe_readneighbors(hood::Neighborhood{R,N}, A::AbstractArray{T,N}, I::NTuple{N,Int}) where {T,R,N}
+    map(indices(hood, I)) do P
+        neighbor_getindex(A, P...) 
+    end
 end
 function unsafe_readneighbors(
     ::Neighborhood{R,N1}, A::AbstractArray{T,N2}, I::NTuple{N3,Int}

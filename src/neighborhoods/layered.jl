@@ -8,7 +8,7 @@
 `neighbors` for `Layered` returns a tuple of iterators
 for each neighborhood layer.
 """
-struct Layered{R,N,L,La,T} <: Neighborhood{R,N,L}
+struct Layered{R,N,L,La} <: Neighborhood{R,N,L}
     "A tuple of custom neighborhoods"
     layers::La
 end

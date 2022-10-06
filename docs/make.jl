@@ -1,21 +1,18 @@
-using Documenter, DynamicGrids, CUDAKernels
-
-CI = get(ENV, "CI", nothing) == "true" || get(ENV, "GITHUB_TOKEN", nothing) !== nothing
+using Documenter, Neighborhoods
 
 makedocs(
-    modules = [DynamicGrids],
-    sitename = "DynamicGrids.jl",
+    modules = [Neighborhoods],
+    sitename = "Neighborhoods.jl",
     checkdocs = :all,
     strict = true,
     format = Documenter.HTML(
         prettyurls = CI,
     ),
     pages = [
-        "DynamicGrids" => "index.md",
-        # "Examples" => "examples.md",
+        "Neighborhoods" => "index.md",
     ],
 )
 
 deploydocs(
-    repo = "github.com/cesaraustralia/DynamicGrids.jl.git",
+    repo = "github.com/rafaqz/Neighborhoods.jl.git",
 )

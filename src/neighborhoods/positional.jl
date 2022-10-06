@@ -51,7 +51,7 @@ N = 1   N = 2
 Using the `O` parameter e.g. `Positional{((1, 2), (1, 1))}()` removes any
 runtime cost of generating the neighborhood.
 """
-struct Positional{O,R,N,L,T} <: AbstractPositionalNeighborhood{R,N,L}
+struct Positional{O,R,N,L,T<:Union{Nothing,<:Tuple}} <: AbstractPositionalNeighborhood{R,N,L}
     "A tuple of tuples of Int, containing 2-D coordinates relative to the central point"
     _neighbors::T
 end

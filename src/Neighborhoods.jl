@@ -2,19 +2,12 @@ module Neighborhoods
 
 using ConstructionBase, StaticArrays, OffsetArrays, UnicodeGraphics
 
-export Neighborhood, Window, AbstractKernelNeighborhood, Kernel,
-       Moore, VonNeumann, AbstractPositionalNeighborhood, Positional, LayeredPositional
-
+export Neighborhood, Window, Kernel, Moore, VonNeumann, Positional, Layered
 export NeighborhoodArray
-
 export BoundaryCondition, Wrap, Remove
+export Paddeun, Padded, Unpadded
 
-export neighbors, neighborhood, kernel, kernelproduct, offsets, positions, radius, distances
-
-export setwindow, updatewindow, unsafe_updatewindow
-
-export pad_axes, inner_axes, pad_array, inner_array, inner_view
-
+export neighborhood, kernel, neighbors, offsets, indices, distances, radius, diameter
 export broadcast_neighborhood, broadcast_neighborhood!
 
 include("neighborhood.jl")

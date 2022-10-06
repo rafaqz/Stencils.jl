@@ -42,7 +42,9 @@ ruleset = Ruleset(rule; boundary=Remove())
 output = sim!(output, rule; boundary=Remove())
 ```
 """
-struct Remove <: BoundaryCondition end
+struct Remove{PV} <: BoundaryCondition
+    padval::PV
+end
 
 # See interface docs
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I::Tuple) = inbounds(data, I...)
@@ -166,47 +168,47 @@ _wrapopt!(g, opt) = g
 #     padval::V
 # end
 # Unpadded{S}(padval::V) where {S,V} = Unadded{S,V}(padval)
-struct Padded{S,K,V}
-    padval::V
-end
-Padded{S,K}(padval::V) where {S,K,V} = Padded{S,K,V}(padval)
+# struct Padded{S,K,V}
+#     padval::V
+# end
+# Padded{S,K}(padval::V) where {S,K,V} = Padded{S,K,V}(padval)
 
-@generated function unsafe_readneighbors(
-    hood::Neighborhood{R,N}, boundary_condition::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
-) where {T,R,N,V,S,K}
-    inner_size = tuple_contents(S)
-    known_inds = tuple_contents(K)
-    # Generate expressions for each offset - either return the padval or index into A
-    neighbor_exprs = map(offsets(hood)) do O
-        ind_expr = Expr(:tuple)
-        for (n, i, s, o) in zip(ntuple(identity, N), known_inds, inner_size, O)
-            if i isa Colon
-                # Use the runtime index
-                return push!(expr, (i isa Colon ? :(I[$n]) : i))
-            end
-            if i + o < 1 
-                if boundary_condition <: Remove
-                    # Short cut out of the loop and just return the padval
-                    return :(padinfo.padval)  
-                else # Wrap
-                    # Use an index from thaae other side of this axis
-                    push!(expr, i + o + s)
-                end
-            elseif i + o > s
-                if boundary_condition <: Remove
-                    # Short cut out of the loop and just return the padvala
-                    return :(padinfo.padval)  
-                else # Wrap
-                    # Use an index from the other side of this axis
-                    push!(expr, i + o - s)
-                end
-            end
-        end 
-        return :(A[$(ind_expr)...])
-    end
+# @generated function unsafe_readneighbors(
+#     hood::Neighborhood{R,N}, boundary_condition::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
+# ) where {T,R,N,V,S,K}
+#     inner_size = tuple_contents(S)
+#     known_inds = tuple_contents(K)
+#     # Generate expressions for each offset - either return the padval or index into A
+#     neighbor_exprs = map(offsets(hood)) do O
+#         ind_expr = Expr(:tuple)
+#         for (n, i, s, o) in zip(ntuple(identity, N), known_inds, inner_size, O)
+#             if i isa Colon
+#                 # Use the runtime index
+#                 return push!(expr, (i isa Colon ? :(I[$n]) : i))
+#             end
+#             if i + o < 1 
+#                 if boundary_condition <: Remove
+#                     # Short cut out of the loop and just return the padval
+#                     return :(padinfo.padval)  
+#                 else # Wrap
+#                     # Use an index from thaae other side of this axis
+#                     push!(expr, i + o + s)
+#                 end
+#             elseif i + o > s
+#                 if boundary_condition <: Remove
+#                     # Short cut out of the loop and just return the padvala
+#                     return :(padinfo.padval)  
+#                 else # Wrap
+#                     # Use an index from the other side of this axis
+#                     push!(expr, i + o - s)
+#                 end
+#             end
+#         end 
+#         return :(A[$(ind_expr)...])
+#     end
 
-    return neighbor_exprs
-end
+#     return neighbor_exprs
+# end
 
 # function columns(hood::Neighborhood{R}, A) where {R}
     # unsafe_readneighbors(

@@ -26,7 +26,7 @@ N = 1   N = 2
         ▀▀▀▀▀
 ```
 """
-struct Window{R,N,L,T} <: Neighborhood{R,N,L}
+struct Window{R,N,L,T<:Union{Nothing,<:Tuple,<:AbstractArray{<:Any,N}}} <: Neighborhood{R,N,L}
     _neighbors::T
 end
 Window(; radius=1, ndims=2) = Window{radius,ndims}(args...)
