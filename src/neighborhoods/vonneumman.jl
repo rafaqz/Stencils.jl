@@ -29,7 +29,7 @@ In 1 dimension it is identical to [`Moore`](@ref).
 Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
 compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,T<:Union{Nothing,<:Tuple}} <: Neighborhood{R,N,L}
+struct VonNeumann{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Neighborhood{R,N,L}
     _neighbors::T
 end
 VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)
@@ -43,7 +43,8 @@ VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_
 
 @inline setneighbors(n::VonNeumann{R,N,L}, _neighbors::T2) where {R,N,L,T2} = VonNeumann{R,N,L,T2}(_neighbors)
 
-@generated function offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}
+offsets(T::Type{<:VonNeumann}) = SVector(_offsets(T))
+@generated function _offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}
     offsets_expr = Expr(:tuple)
     rngs = ntuple(_ -> -R:R, N)
     for I in CartesianIndices(rngs)

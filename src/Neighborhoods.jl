@@ -1,19 +1,25 @@
 module Neighborhoods
 
-using ConstructionBase, StaticArrays, OffsetArrays, UnicodeGraphics
+using Adapt, 
+      ConstructionBase,
+      KernelAbstractions,
+      OffsetArrays,
+      Setfield,
+      StaticArrays,
+      UnicodeGraphics
 
 export Neighborhood, Window, Kernel, Moore, VonNeumann, Positional, Layered
 export NeighborhoodArray
 export BoundaryCondition, Wrap, Remove
-export Paddeun, Padded, Unpadded
+export Padding, Conditional, Halo
 
 export neighborhood, kernel, neighbors, offsets, indices, distances, radius, diameter
 export broadcast_neighborhood, broadcast_neighborhood!
 
 include("neighborhood.jl")
-include("array.jl")
 include("boundary.jl")
 include("padding.jl")
+include("array.jl")
 include("broadcast_neighborhood.jl")
 
 include("neighborhoods/moore.jl")

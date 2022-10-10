@@ -9,3 +9,17 @@
 Neighborhoods.jl streamlines working with neighborhoods - cellular automata,
 convolutions and filters, for neighborhoods of any size and
 shape.
+
+This package exists to be generic, extremely fast, and hardware agnostic.
+
+It will:
+
+- Run on CPUs and GPUs
+- Use any neighborhood shapes and sizes, in any combination.
+- Have an easy to use, concise syntax.
+- Allow broadcasting neighborhood operations.
+- Allow using neighborhoods in arbitrary loops, such as in spatial cost-distance models.
+- You can use Neighborhoods.jl for image filtering and convolutions, but it will have no
+  explicit image or color dependencies.
+- Provide tools for array switching: where two-layered arrays can be used for
+  multiple steps of a simulationsjk

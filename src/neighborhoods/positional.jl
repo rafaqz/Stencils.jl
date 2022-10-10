@@ -51,7 +51,7 @@ N = 1   N = 2
 Using the `O` parameter e.g. `Positional{((1, 2), (1, 1))}()` removes any
 runtime cost of generating the neighborhood.
 """
-struct Positional{O,R,N,L,T<:Union{Nothing,<:Tuple}} <: AbstractPositionalNeighborhood{R,N,L}
+struct Positional{O,R,N,L,T<:Union{Nothing,<:AbstractArray}} <: AbstractPositionalNeighborhood{R,N,L}
     "A tuple of tuples of Int, containing 2-D coordinates relative to the central point"
     _neighbors::T
 end
@@ -76,7 +76,7 @@ function ConstructionBase.constructorof(::Type{Positional{O,R,N,L,T}}) where {O,
     Positional{O,R,N,L}
 end
 
-offsets(::Type{<:Positional{O}}) where O = O
+offsets(::Type{<:Positional{O}}) where O = SVector(O)
 
 @inline function setneighbors(n::Positional{O,R,N,L}, _neighbors::T2) where {O,R,N,L,T2}
     Positional{O,R,N,L,T2}(_neighbors)

@@ -31,7 +31,7 @@ N = 1   N = 2
 Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
 compated to passing arguments/keywords.
 """
-struct Moore{R,N,L,T<:Union{Nothing,<:Tuple}} <: Neighborhood{R,N,L}
+struct Moore{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Neighborhood{R,N,L}
     _neighbors::T
 end
 Moore(radius::Int=1; ndims=2) = Moore{radius,ndims}()
@@ -40,7 +40,8 @@ Moore{R}(_neighbors=nothing; ndims=2) where R = Moore{R,ndims,}(_neighbors)
 Moore{R,N}(_neighbors=nothing) where {R,N} = Moore{R,N,(2R+1)^N-1}(_neighbors)
 Moore{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Moore{R,N,L,T}(_neighbors)
 
-@generated function offsets(::Type{<:Moore{R,N,L}}) where {R,N,L}
+offsets(T::Type{<:Moore}) = SVector(_offsets(T))
+@generated function _offsets(::Type{<:Moore{R,N,L}}) where {R,N,L}
     exp = Expr(:tuple)
     # First half
     for I in CartesianIndices(ntuple(_-> -R:R, N))[1:L÷2]
