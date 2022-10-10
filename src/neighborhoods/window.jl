@@ -42,4 +42,5 @@ Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
     SVector(ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N))
 end
 
-@inline setneighbors(::Window{R,N,L}, _neighbors::T2) where {R,N,L,T2} = Window{R,N,L,T2}(_neighbors)
+@inline setneighbors(::Window{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
+    Window{R,N,L,T2}(_neighbors)

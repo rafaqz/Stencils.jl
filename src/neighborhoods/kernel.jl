@@ -81,8 +81,8 @@ function _kernel_length_error(hood, kernel)
     throw(ArgumentError("Neighborhood length $(length(hood)) does not match kernel length $(length(kernel))"))
 end
 
-function setwindow(n::Kernel{R,N,L,<:Any,K}, win) where {R,N,L,K}
-    hood = setwindow(neighborhood(n), win)
+function setneighbors(n::Kernel{R,N,L,<:Any,K}, _neighbors) where {R,N,L,K}
+    hood = setneighbors(neighborhood(n), _neighbors)
     return Kernel{R,N,L,typeof(hood),K}(hood, kernel(n))
 end
 

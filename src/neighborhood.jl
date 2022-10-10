@@ -82,16 +82,8 @@ Returns an indexable iterable of `Tuple` indices of each neighbor in the main ar
 function indices end
 @inline indices(hood::Neighborhood, I::CartesianIndex) = indices(hood, Tuple(I))
 @inline indices(hood::Neighborhood, I::Int...) = indices(hood, I)
-indices(hood::Neighborhood, I) = map(O -> map(+, O, I), offsets(hood)) 
-indexat(hood::Neighborhood, center, i) = map(+, offsets(hood)[i], center)
-
-struct LazyNeighors{L,T,A<:AbstractArray{T},H<:Neighborhood{<:Any,<:Any,L},C} <: StaticVector{L,T}
-    parent::A
-    neighborhood::H
-    center::C
-end
-Base.@propagate_inbounds getindex(A::LazyNeighors, i::Integer) =
-    A[indexat(neighborhood(A), A.center, i)...]
+@inline indices(hood::Neighborhood, I) = map(O -> map(+, O, I), offsets(hood)) 
+Base.@propagate_inbounds indexat(hood::Neighborhood, center, i) = CartesianIndex(offsets(hood)[i]) + center
 
 """
     distances(hood::Neighborhood)
@@ -125,17 +117,20 @@ Base.ndims(hood::Neighborhood{<:Any,N}) where N = N
 Base.size(hood::Neighborhood{R,N}) where {R,N} = ntuple(_ -> 2R+1, N)
 Base.axes(hood::Neighborhood{R,N}) where {R,N} = ntuple(_ -> SOneTo{2R+1}(), N)
 Base.iterate(hood::Neighborhood, args...) = iterate(neighbors(hood), args...)
-Base.getindex(hood::Neighborhood, i) = neighbors(hood)[i]
+Base.@propagate_inbounds Base.getindex(hood::Neighborhood, i) = neighbors(hood)[i]
+Base.keys(hood::Neighborhood{<:Any,<:Any,L}) where L = StaticArrays.SOneTo(L)
 function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R}) where R
     println(typeof(hood))
     bools = Bool[((i, j) in offsets(hood)) for i in -R:R, j in -R:R]
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood)) 
         println(io)
-        show(io, mime, neighbors(hood))
+        if !isnothing(neighbors(hood))
+            printstyled(io, "with neighbors:\n", color=:light_black)
+            show(io, mime, neighbors(hood))
+        end
     end
 end
-
 
 # Utils
 

@@ -54,4 +54,5 @@ offsets(T::Type{<:Moore}) = SVector(_offsets(T))
     end
     return exp
 end
-@inline setneighbors(n::Moore{R,N,L}, _neighbors::T2) where {R,N,L,T2} = Moore{R,N,L,T2}(_neighbors)
+@inline setneighbors(n::Moore{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
+    Moore{R,N,L,T2}(_neighbors)

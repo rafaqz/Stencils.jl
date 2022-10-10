@@ -12,8 +12,16 @@ In `:out` mode, a whole new array is alocated, larger than the original.
 This may not be worth doing unless you are using it multiple times. with `:in`
 mode, the outside edge of the array is used as padding. This may be more accurate 
 as there are no boundary effects from using a padding value.:w
+
+# Example
+```julia
+halo = Halo(:in)
+halo = Halo(:out)
+```
 """
 struct Halo{X} <: Padding end
+Halo() = Halo{:out}() # Default to :out
+Halo(k::Symbol) = Halo{k}()
 
 """
     Conditional <: Padding
@@ -90,8 +98,7 @@ pad_array(::Conditional, ::BoundaryCondition, hood::Neighborhood, parent::Abstra
 function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Neighborhood, parent::AbstractArray{T}) where T
     rs = _radii(parent, hood)
     padded_axes = outer_axes(parent, rs)
-    T1 = promote_type(T, typeof(padval))
-    padded_parent = similar(parent, T1, length.(padded_axes))
+    padded_parent = similar(parent, T, length.(padded_axes))
     inner_view(padded_parent, rs) .= parent
     padded_offset = OffsetArray(padded_parent, padded_axes)
     return padded_offset

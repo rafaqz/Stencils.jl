@@ -41,7 +41,8 @@ function VonNeumann{R,N}(_neighbors=nothing) where {R,N}
 end
 VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_neighbors)
 
-@inline setneighbors(n::VonNeumann{R,N,L}, _neighbors::T2) where {R,N,L,T2} = VonNeumann{R,N,L,T2}(_neighbors)
+@inline setneighbors(n::VonNeumann{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
+    VonNeumann{R,N,L,T2}(_neighbors)
 
 offsets(T::Type{<:VonNeumann}) = SVector(_offsets(T))
 @generated function _offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}

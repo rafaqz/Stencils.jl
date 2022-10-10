@@ -6,17 +6,18 @@ each neighborhood in `A`, returning a new array.
 
 The result is smaller than `A` on all sides, by the neighborhood radius.
 """
-function broadcast_neighborhood(f, source::AbstractNeighborhoodArray{<:Any,<:Any,<:Any,N}, args::AbstractArray...) where N
+function broadcast_neighborhood(f, source::AbstractNeighborhoodArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
     _checksizes((source, args...))
     # Get the type of the neighborhood
-    H = typeof(update_neighborhood(source, first(CartesianIndices(source))))
+    emptyhood = SVector(ntuple(_ -> zero(T), length(neighborhood(source))))
+    H = typeof(setneighbors(neighborhood(source), emptyhood))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
-    T = Base._return_type(f, Tuple{H,map(eltype, args)...})
-    dest = similar(parent(source), T, size(source))
+    T_return = Base._return_type(f, Tuple{H})#,map(eltype, args)...})
+    dest = similar(parent(source), T_return, size(source))
     broadcast_neighborhood!(f, dest, source, args...)
 end
-broadcast_neighborhood(f, A::AbstractArray, args::AbstractArray...; kw...) =
-    broadcast_neighborhood(f, NeighborhoodArray(A; kw...), args...; kw...)
+# broadcast_neighborhood(f, A::AbstractArray, args::AbstractArray...; kw...) =
+#     broadcast_neighborhood(f, NeighborhoodArray(A; kw...), args...; kw...)
 
 kernel_setup() = KernelAbstractions.CPU(), 1
 
@@ -31,15 +32,16 @@ sides, or be the same size, in which case it is assumed to also be padded.
 """
 function broadcast_neighborhood!(f, dest, source::NeighborhoodArray, args::AbstractArray...)
     _checksizes((dest, source, args...))
+    update_boundary!(source)
     device = KernelAbstractions.get_device(parent(source))
-    n = device isa GPU ? 256 : 4
+    n = device isa GPU ? 64 : 4
     broadcast_kernel!(device, n)(f, dest, source, args...; ndrange=size(dest)) |> wait
     return dest
 end
 
-@kernel function broadcast_kernel!(f, dest, source, args...)
+@kernel function broadcast_kernel!(f, dest, source)#, args...)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I), _maybe_arg_getindex(I, args...)...)
+    @inbounds dest[I] = f(neighborhood(source, I))#, _maybe_arg_getindex(I, args...)...)
     nothing
 end
 

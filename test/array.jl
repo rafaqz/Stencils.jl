@@ -61,33 +61,35 @@ using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
         D .= 0.0
     end
 
+@testset "broadcast" begin
     using ProfileView
     using CUDA, KernelAbstractions, CUDAKernels
+    CUDA.allowscalar(false)
     using BenchmarkTools
     function f(hood)
-        sum = zero(first(hood))
-        for x in hood
-            sum += 3x
+        sum = 0.0
+        nbrs = neighbors(hood)
+        for n in nbrs
+            sum += 2n
         end
         return sum
     end
-    function f2(hood, x)
-        sum = zero(first(hood))
-        for x in hood
-            sum += 3x
-        end
-        return sum
-    end
-    # r = CuArray(r)
-    @benchmark
+    r = rand(1000, 1000)
+    r = CuArray(r)
+    A = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Conditional(), boundary_condition=Remove(zero(eltype(r))));
+    B = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Halo{:out}(), boundary_condition=Remove(zero(eltype(r))));
+    C = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Halo{:in}(), boundary_condition=Remove(zero(eltype(r))));
     @time broadcast_neighborhood(f, A)
-    @time broadcast_neighborhood(f2, A, A)
-    @benchmark
     @time broadcast_neighborhood(f, B)
-    C = NeighborhoodArray(r; neighborhood=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
-    @benchmark
-    @profview
     @time broadcast_neighborhood(f, C)
+    @benchmark broadcast_neighborhood(f, A)
+    @benchmark broadcast_neighborhood(f, B)
+    @benchmark broadcast_neighborhood(f, C)
+    @profview for _ in 1:100 broadcast_neighborhood(f, A) end
+    @profview for _ in 1:100 broadcast_neighborhood(f, B) end
+    @profview for _ in 1:100 broadcast_neighborhood(f, C) end
+
+    C = NeighborhoodArray(r; neighborhood=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
     @benchmark
     @time broadcast_neighborhood(f, D)
     E = NeighborhoodArray(r; neighborhood=VonNeumann{50}(), padding=Padded{:out}(), boundary_condition=Remove(0.0));
