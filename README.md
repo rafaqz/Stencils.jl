@@ -19,12 +19,6 @@ It will:
 - Have an easy to use, concise syntax.
 - Allow broadcasting neighborhood operations.
 - Allow using neighborhoods in arbitrary loops, such as in spatial cost-distance models.
-- Be usfull for image filtering and convolutions, but:
-  - it will have no explicit image or color dependencies.
-  - it uses a _direct_ windowing approach, consequently will often be the fastest options
-      for small neighborhood sizes, but will become less performant as size increases.
-  - it will not have FFTs, GEMM, or (e.g. Gaussian) convolutions deconstructed into 2 passes,
-      unless someone really wants them and writes a PR.
+- Be usfull for image filtering and convolutions, but it will have no explicit image or color dependencies.
 - Provide tools for array switching: where two-layered arrays can be used for
-  multiple steps of a simulations, or applying filters repeatedly using the same
-  memory (with which you can easily manually construct e.g. a fast 2-pass Gaussian filter).
+  multiple steps of a simulations, or applying filters repeatedly using the same memory.

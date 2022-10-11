@@ -18,6 +18,12 @@ function broadcast_neighborhood(f, source::AbstractNeighborhoodArray{<:Any,<:Any
 end
 # broadcast_neighborhood(f, A::AbstractArray, args::AbstractArray...; kw...) =
 #     broadcast_neighborhood(f, NeighborhoodArray(A; kw...), args...; kw...)
+#
+_emptyhood(x) = _emptyhood(x, neighborhood(x))
+function _emptyhood(x::AbstractArray{T}, hood::Neighborhood{<:Any,<:Any,L}) where {T,L} 
+    z = zero(T)
+    return SVector(ntuple(_ -> z, Val{L}()))
+end
 
 kernel_setup() = KernelAbstractions.CPU(), 1
 
@@ -31,11 +37,12 @@ of `src` (except padding), writing the result of `f` to `dest`.
 sides, or be the same size, in which case it is assumed to also be padded.
 """
 function broadcast_neighborhood!(f, dest, source::NeighborhoodArray, args::AbstractArray...)
-    _checksizes((dest, source, args...))
-    update_boundary!(source)
+    # _checksizes((dest, source, args...))
+    # update_boundary!(source)
     device = KernelAbstractions.get_device(parent(source))
     n = device isa GPU ? 64 : 4
-    broadcast_kernel!(device, n)(f, dest, source, args...; ndrange=size(dest)) |> wait
+    kernel! = broadcast_kernel!(device, n)
+    kernel!(f, dest, source, args...; ndrange=size(dest)) |> wait
     return dest
 end
 
