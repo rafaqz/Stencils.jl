@@ -51,7 +51,7 @@ end
 function kernelproduct(hood::Window{<:Any,<:Any,L}, kernel) where L
     sum = zero(first(hood))
     @simd for i in 1:L
-        @inbounds sum += _window(hood)[i] * kernel[i]
+        @inbounds sum += neighbors(hood)[i] * kernel[i]
     end
     return sum
 end

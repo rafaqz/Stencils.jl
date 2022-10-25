@@ -9,8 +9,8 @@ abstract type AbstractNeighborhoodArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} 
 
 boundary_condition(A::AbstractNeighborhoodArray) = A.boundary_condition
 padding(A::AbstractNeighborhoodArray) = A.padding
-Base.@propagate_inbounds neighborhood(A::AbstractNeighborhoodArray, I...) =
-    update_neighborhood(A, I...)
+Base.@propagate_inbounds neighborhood(A::AbstractNeighborhoodArray, I::Tuple) =
+    update_neighborhood(A, CartesianIndex(I))
 Base.@propagate_inbounds neighborhood(A::AbstractNeighborhoodArray, I::Union{CartesianIndex,Int}...) =
     neighborhood(A, CartesianIndex(to_indices(A, I)))
 Base.@propagate_inbounds neighborhood(A::AbstractNeighborhoodArray, I::CartesianIndex) =
@@ -35,7 +35,19 @@ Get a single neighborhood from an array, as a `Tuple`, checking bounds.
     return unsafe_neighbors(A, I)
 end
 
-Base.iterate(A::AbstractNeighborhoodArray, args...) = iterate(inner_view(A), args...)
+# function Base.show(io, mime::MIME"text/plain", A::AbstractNeighborhoodArray)
+#     invoke(show, (AbstractArray,), A)
+#     println()
+#     show(io, mime, neighborhood(A))
+#     println()
+#     show(io, mime, boundary_condition(A))
+#     println()
+#     show(io, mime, padding(A))
+# end
+
+# Iterate over the parent for `Conditional` padding, 2x faster.
+Base.iterate(A::AbstractNeighborhoodArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Conditional}, args...) =
+    iterate(parent(A), args...)
 Base.parent(A::AbstractNeighborhoodArray) = A.parent
 for f in (:getindex, :view, :dotview)
     @eval begin
@@ -56,8 +68,6 @@ Base.similar(A::AbstractNeighborhoodArray, ::Type{T}) where T = similar(parent(p
 Base.similar(A::AbstractNeighborhoodArray, I::Tuple{Int,Vararg{Int}}) = similar(parent(parent(A)), I)
 Base.similar(A::AbstractNeighborhoodArray, ::Type{T}, I::Tuple{Int,Vararg{Int}}) where T =
     similar(parent(parent(A)), T, I)
-
-# inner_view(A::AbstractNeighborhoodArray{S,R}) where {S,R} = view(parent(A), axes(A))
 
 """
     NeighborhoodArray <: AbstractNeighborhoodArray
@@ -98,8 +108,8 @@ struct NeighborhoodArray{S,R,T,N,A<:AbstractArray{T,N},H<:Neighborhood{R,N},BC,P
     boundary_condition::BC
     padding::P
     function NeighborhoodArray{S,R,T,N,A,H,BC,P}(parent::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
-        map(tuple_contents(S)) do s
-            R < s || throw(ArgumentError("neighborhood radius R is larger than array axis $s"))
+        map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
+            max(map(abs, rs)...) < s || throw(ArgumentError("neighborhood radius is larger than array axis $s"))
         end
         return new{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
     end
@@ -113,11 +123,10 @@ NeighborhoodArray{S}(parent::AbstractArray, hood::Neighborhood{R}, bc, padding) 
     NeighborhoodArray{S,R}(parent, hood, bc, padding)
 NeighborhoodArray{S,R}(parent::A, h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Neighborhood{R},BC,P} where {R,T,N} =
     NeighborhoodArray{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
-function NeighborhoodArray(parent;
-    neighborhood=Window{1}(),
+function NeighborhoodArray(parent::AbstractArray{<:Any,N}, neighborhood=Window{1,N}();
     boundary_condition=Remove(zero(eltype(parent))),
     padding=Conditional(),
-)
+) where N
     NeighborhoodArray(parent, neighborhood, boundary_condition, padding)
 end
 
@@ -161,8 +170,10 @@ Base.length(::LazyNeighborhoodVector{Tuple{L}}) where L = L
 
 Get a single neighborhood from an array, as a `Tuple`, without checking bounds.
 """
-@inline function unsafe_neighbors(A::AbstractNeighborhoodArray, I::CartesianIndex)
-    map(indices(neighborhood(A), I)) do P
+@inline unsafe_neighbors(A::AbstractNeighborhoodArray, I::CartesianIndex) =
+    unsafe_neighbors(A, neighborhood(A), I)
+@inline function unsafe_neighbors(A::AbstractNeighborhoodArray, hood::Neighborhood, I::CartesianIndex)
+    map(indices(hood, I)) do P
         @inbounds neighbor_getindex(A, CartesianIndex(P))
     end
 end
@@ -175,19 +186,6 @@ Bounds checks will reduce performance, aim to use `unsafe_setneighbors` directly
 """
 Base.@propagate_inbounds update_neighborhood(A::AbstractNeighborhoodArray, I::CartesianIndex) =
     setneighbors(neighborhood(A), neighbors(A, I))
-    # setneighbors(neighborhood(A), LazyNeighborhoodVector(A, I))
-
-"""
-    unsafe_update_neighborhood(x, A::AbstractArray, I) => Neighborhood
-
-Set the neighbors of a neighborhood to values from the array A around index `I`.
-
-No bounds checks occur, ensure that A has padding of at least the neighborhood radius.
-"""
-@inline function unsafe_update_neighborhood(A::AbstractNeighborhoodArray, I::CartesianIndex)
-    # setneighbors(neighorhood(A), LazyNeighborhoodVector(A, neighorhood(A), I))
-    setneighbors(neighorhood(A), unsafe_neighbors(A, I))
-end
 
 Base.@propagate_inbounds function neighbor_getindex(A::AbstractNeighborhoodArray, I::CartesianIndex)
     neighbor_getindex(A, boundary_condition(A), padding(A), I)

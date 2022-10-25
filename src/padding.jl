@@ -106,7 +106,3 @@ end
 function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::Neighborhood, parent::AbstractArray)
     return OffsetArray(parent, offset_axes(parent, hood))
 end
-
-_radii(A::AbstractArray, r::Tuple) = r
-_radii(A::AbstractArray{<:Any,N}, r) where N = ntuple(_ -> (r, r), N)
-_radii(A::AbstractArray, ::Neighborhood{R}) where R = _radii(A, R)

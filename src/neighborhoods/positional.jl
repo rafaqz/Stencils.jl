@@ -63,8 +63,8 @@ function Positional(offsets::O, _neighbors=nothing) where O
     Positional{offsets}(_neighbors)
 end
 function Positional{O}(_neighbors=nothing) where O
-    R = _absmaxcoord(O)
     N = length(first(O))
+    R = _positional_radii(N, O)
     L = length(O)
     Positional{O,R,N,L}(_neighbors)
 end
@@ -83,6 +83,8 @@ offsets(::Type{<:Positional{O}}) where O = SVector(O)
 end
 
 # Calculate the maximum absolute value in the offsets to use as the radius
-function _absmaxcoord(offsets::Union{AbstractArray,Tuple})
-    maximum(map(x -> maximum(map(abs, x)), offsets))
+function _positional_radii(ndims, offsets::Union{AbstractArray,Tuple}) where N
+    ntuple(ndims) do i
+        extrema(o[i] for o in offsets)
+    end
 end

@@ -12,27 +12,36 @@ struct Layered{R,N,L,La} <: Neighborhood{R,N,L}
     "A tuple of custom neighborhoods"
     layers::La
 end
-Layered(layers::...) = Layere(layers)
+Layered(layers::Neighborhood...) = Layered(layers)
 function Layered(layers::Union{NamedTuple,Tuple}, _neighbors=nothing)
-    R = maximum(map(radius, layers))
     N = ndims(first(layers))
+    R = if length(layers) > 1
+        layer_radii = map(l -> _radii(Val{N}(), l), layers)
+        # Find the maximum bounds of each dimension
+        reduce(layer_radii) do acc, next
+            map(acc, next) do a, n
+                min(a[1], n[1]), max(a[2], n[2])
+            end
+        end
+    else
+        radius(first(layers))
+    end
     L = map(length, layers)
-    Layered{R,N,L}(layers, _neighbors)
+    Layered{R,N,L}(layers)
 end
-function Layered{R,N,L}(layers) where {R,N,L}
-    Layered{R,N,L,typeof(layers)}(layers)
-end
+Layered{R,N,L}(layers) where {R,N,L} = Layered{R,N,L,typeof(layers)}(layers)
 
+layers(hood::Layered) = hood.layers
 @inline neighbors(hood::Layered) = map(l -> neighbors(l), hood.layers)
 @inline offsets(::Type{<:Layered{R,N,L,La}}) where {R,N,L,La} =
     map(p -> offsets(p), tuple_contents(La))
-@inline positions(hood::Layered, I::Tuple) = map(l -> positions(l, I...), hood.layers)
-@inline function setneighbors(n::Layered{R,N,L}, _neighbors) where {R,N,L}
-    Layered{R,N,L}(n.layers)
+@inline indices(hood::Layered, I::Tuple) = map(l -> indices(l, I...), hood.layers)
+@inline function setneighbors(h::Layered{R,N,L}, layer_neighbors) where {R,N,L}
+    Layered{R,N,L}(map(setneighbors, layers(h), layer_neighbors))
 end
 
-@inline Base.sum(hood::Layered) = map(sum, neighbors(hood))
-
-@inline function unsafe_readneighbors(hood::Layered{R,N}, A::AbstractArray{T,N}, I::NTuple{N,Int}) where {T,R,N}
-    map(l -> unsafe_readneighbors(l, A, I), hood)
+@inline function unsafe_neighbors(A::AbstractNeighborhoodArray, hood::Layered, I::CartesianIndex)
+    map(l -> unsafe_neighbors(A, l, I), layers(hood))
 end
+
+Base.map(f, hood::Neighborhood) = map(f, layers(hood))

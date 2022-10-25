@@ -48,6 +48,9 @@ end
 
 padval(bc::Remove) = bc.padval
 
+
+# From DynamicGrids.jl
+
 # See interface docs
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I::Tuple) = inbounds(data, I...)
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I...) = 

@@ -71,7 +71,7 @@ containing `Tuple`s of the offset from the central cell.
 Custom `Neighborhood`s must define this method.
 """
 function offsets end
-offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = offsets(typeof(hood))::SVector{L,NTuple{N,Int}}
+offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = offsets(typeof(hood))
 getoffset(hood, i::Int) = offsets(hood)[i]
     
 """
@@ -105,7 +105,7 @@ end
 
 List all distance zones as a Tuple
 """
-distance_zones(hood::Neighborhood) = Tuple(sort(union(distances)))
+distance_zones(hood::Neighborhood) = map(prod, offsets(hood))
 
 Base.eltype(hood::Neighborhood) = eltype(neighbors(hood))
 Base.length(hood::Neighborhood) = length(typeof(hood))
@@ -119,9 +119,10 @@ Base.axes(hood::Neighborhood{R,N}) where {R,N} = ntuple(_ -> SOneTo{2R+1}(), N)
 Base.iterate(hood::Neighborhood, args...) = iterate(neighbors(hood), args...)
 Base.@propagate_inbounds Base.getindex(hood::Neighborhood, i) = neighbors(hood)[i]
 Base.keys(hood::Neighborhood{<:Any,<:Any,L}) where L = StaticArrays.SOneTo(L)
-function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R}) where R
+function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R,N}) where {R,N}
+    rs = _radii(Val{N}(), R)
     println(typeof(hood))
-    bools = Bool[((i, j) in offsets(hood)) for i in -R:R, j in -R:R]
+    bools = bool_array(hood)
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood)) 
         println(io)
@@ -132,6 +133,20 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R}) where 
     end
 end
 
+function bool_array(hood::Neighborhood{R,1}) where {R}
+    rs = _radii(hood)
+    Bool[((i,) in offsets(hood)) for i in rs[1][1]:rs[1][2]]
+end
+function bool_array(hood::Neighborhood{R,2}) where {R}
+    rs = _radii(hood)
+    Bool[((i, j) in offsets(hood)) for i in rs[1][1]:rs[1][2], j in rs[1][1]:rs[1][2]]
+end
+function bool_array(hood::Neighborhood{R,3}) where {R}
+    rs = _radii(hood)
+    # Just show the center slice
+    Bool[((i, j, 0) in offsets(hood)) for i in rs[1][1]:rs[1][2], j in rs[1][1]:rs[1][2]]
+end
+
 # Utils
 
 # Copied from StaticArrays. If they can do it...
@@ -139,3 +154,18 @@ Base.@pure function tuple_contents(::Type{X}) where {X<:Tuple}
     return tuple(X.parameters...)
 end
 tuple_contents(xs::Tuple) = xs
+
+
+# radii
+# Get the radii of a neighborhood in N dimensions
+# The radius can vary by dimension and side
+# NTuple of tuples - end state
+_radii(::Val{N}, r::NTuple{N,<:Tuple{<:Integer,<:Integer}}) where N = r
+# NTuple of Integers, map so both sides are the same
+_radii(::Val{N}, rs::NTuple{N,Integer}) where N = map(r -> (r, r), rs) 
+# Integer, make an Ntuple{N,NTuple{2,Integer}}
+_radii(::Val{N}, r::Integer) where N = ntuple(_ -> (r, r), N)
+_radii(ndims::Val, ::Neighborhood{R}) where R = _radii(ndims, R)
+# Convert array/neighborhood to `Val{N}` for ndims
+_radii(::Neighborhood{R,N}) where {R,N} = _radii(Val{N}(), R)
+_radii(A::AbstractArray{<:Any,N}, r) where N = _radii(Val{N}(), r)
