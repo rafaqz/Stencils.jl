@@ -30,6 +30,7 @@ function Layered(layers::Union{NamedTuple,Tuple}, _neighbors=nothing)
     Layered{R,N,L}(layers)
 end
 Layered{R,N,L}(layers) where {R,N,L} = Layered{R,N,L,typeof(layers)}(layers)
+Layered(; layers...) = Layered(values(layers))
 
 layers(hood::Layered) = hood.layers
 @inline neighbors(hood::Layered) = map(l -> neighbors(l), hood.layers)
@@ -44,4 +45,4 @@ end
     map(l -> unsafe_neighbors(A, l, I), layers(hood))
 end
 
-Base.map(f, hood::Neighborhood) = map(f, layers(hood))
+Base.map(f, hood::Layered) = map(f, layers(hood))
