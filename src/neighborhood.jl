@@ -73,6 +73,8 @@ Custom `Neighborhood`s must define this method.
 function offsets end
 offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = offsets(typeof(hood))
 getoffset(hood, i::Int) = offsets(hood)[i]
+
+cartesian_offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = map(CartesianIndex, offsets(typeof(hood)))
     
 """
     indices(x::Union{Neighborhood,NeighborhoodRule}}, I::Tuple) -> iterable
