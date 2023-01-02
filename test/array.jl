@@ -18,9 +18,9 @@ using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
     end
     @testset "2d" begin
         r = rand(100, 100)
-        A = NeighborhoodArray(r, VonNeumann{3}(), padding=Conditional(), boundary_condition=Remove(0.0));
-        B = NeighborhoodArray(r, Window{10}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
-        C = NeighborhoodArray(r, Moore{10}(), padding=Halo{:in}(), boundary_condition=Wrap());
+        A = NeighborhoodArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary_condition=Remove(0.0));
+        B = NeighborhoodArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
+        C = NeighborhoodArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100)
         @test size(B) == (100, 100)
         @test size(parent(B)) == (120, 120)
@@ -34,37 +34,29 @@ using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
         @test size(similar(A)) == size(A)
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)
-        D = NeighborhoodArray(r, Moore{10,2}(); padding=Halo{:in}(), boundary_condition=Remove(0.0));
-        D .= 0.0
-        f(A) = map(==(0.0), A)
-        using BenchmarkTools, ProfileView
-        @benchmark f($r)
-        @benchmark f($x)
-        @benchmark f($s)
-        @benchmark f($A)
-        @benchmark f($B)
-        @benchmark f($C)
-
-        @profview for i in 1:100000 f(A) end
-        @profview for i in 1:100000 f1(A) end
-        @profview for i in 1:100000 f(parent(A)) end
-        @test all(==(0.0), parent(D))
+        A .= 0
+        B .= 0
+        C .= 0
+        @test all(==(0.0), A)
+        @test all(==(0.0), B)
+        @test all(==(0.0), C)
     end
     @testset "3d" begin
         r = rand(100, 100, 100)
-        A = NeighborhoodArray(r, VonNeumann{3,3}(), padding=Conditional(), boundary_condition=Remove(0.0));
+        A = NeighborhoodArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary_condition=Remove(0.0));
         B = NeighborhoodArray(r, Window{10,3}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
-        C = NeighborhoodArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary_condition=Wrap());
+        C = NeighborhoodArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100, 100)
         @test size(B) == (100, 100, 100)
-
         @test size(parent(B)) == (120, 120, 120)
         @test size(C) == (80, 80, 80)
         @test size(parent(C)) == (100, 100, 100)
-        D = NeighborhoodArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary_condition=Remove(0.0));
+        D = NeighborhoodArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary_condition=Wrap());
         D .= 0.0
+        axes(parent(D))
         @test all(==(0.0), D)
     end
+end
 
 # @testset "broadcast" begin
 #     using ProfileView

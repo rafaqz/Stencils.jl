@@ -1,3 +1,4 @@
+using Neighborhoods
 using Aqua
 
 Aqua.test_ambiguities([Neighborhoods, Base, Core])

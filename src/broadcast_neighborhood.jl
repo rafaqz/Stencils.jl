@@ -41,7 +41,7 @@ sides, or be the same size, in which case it is assumed to also be padded.
 """
 function broadcast_neighborhood!(f, dest, source::NeighborhoodArray, args::AbstractArray...)
     _checksizes((dest, source, args...))
-    # update_boundary!(source)
+    update_boundary!(source)
     device = KernelAbstractions.get_device(parent(source))
     n = device isa GPU ? 64 : 4
     if length(args) == 0

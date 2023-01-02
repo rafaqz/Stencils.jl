@@ -7,8 +7,8 @@ but should be listed in column-major order for performance.
 """
 abstract type AbstractPositionalNeighborhood{R,N,L} <: Neighborhood{R,N,L} end
 
-const CustomOffset = Tuple{Vararg{Int}}
-const CustomOffsets = Union{AbstractArray{<:CustomOffset},Tuple{Vararg{<:CustomOffset}}}
+const CustomOffset = Tuple{Int,Vararg{Int}}
+const CustomOffsets = Union{Tuple{<:CustomOffset,Vararg{<:CustomOffset}}}
 
 """
     Positional <: AbstractPositionalNeighborhood
@@ -55,20 +55,17 @@ struct Positional{O,R,N,L,T<:Union{Nothing,<:AbstractArray}} <: AbstractPosition
     "A tuple of tuples of Int, containing 2-D coordinates relative to the central point"
     _neighbors::T
 end
-Positional(args::CustomOffset...) = Positional(args)
-function Positional(offsets::CustomOffsets, _neighbors=nothing)
+Positional(co::CustomOffset, args::CustomOffset...) = Positional((co, args...))
+function Positional(offsets::CustomOffsets, _neighbors::Union{Nothing,AbstractVector}=nothing)
     Positional{offsets}(_neighbors)
 end
-function Positional(offsets::O, _neighbors=nothing) where O
-    Positional{offsets}(_neighbors)
-end
-function Positional{O}(_neighbors=nothing) where O
+function Positional{O}(_neighbors::Union{Nothing,AbstractVector}=nothing) where O
     N = length(first(O))
     R = _positional_radii(N, O)
     L = length(O)
     Positional{O,R,N,L}(_neighbors)
 end
-function Positional{O,R,N,L}(_neighbors::T=nothing) where {O,R,N,L,T}
+function Positional{O,R,N,L}(_neighbors::T=nothing) where {O,R,N,L,T<:Union{Nothing,AbstractVector}}
     Positional{O,R,N,L,T}(_neighbors)
 end
 
@@ -83,7 +80,7 @@ offsets(::Type{<:Positional{O}}) where O = SVector(O)
 end
 
 # Calculate the maximum absolute value in the offsets to use as the radius
-function _positional_radii(ndims, offsets::Union{AbstractArray,Tuple}) where N
+function _positional_radii(ndims, offsets::Union{AbstractArray,Tuple})
     ntuple(ndims) do i
         extrema(o[i] for o in offsets)
     end

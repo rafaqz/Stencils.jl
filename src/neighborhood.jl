@@ -71,10 +71,10 @@ containing `Tuple`s of the offset from the central cell.
 Custom `Neighborhood`s must define this method.
 """
 function offsets end
-offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = offsets(typeof(hood))
+offsets(hood::Neighborhood) = offsets(typeof(hood))
 getoffset(hood, i::Int) = offsets(hood)[i]
 
-cartesian_offsets(hood::Neighborhood{<:Any,N,L}) where {N,L} = map(CartesianIndex, offsets(typeof(hood)))
+cartesian_offsets(hood::Neighborhood) = map(CartesianIndex, offsets(typeof(hood)))
     
 """
     indices(x::Union{Neighborhood,NeighborhoodRule}}, I::Tuple) -> iterable
@@ -163,6 +163,7 @@ tuple_contents(xs::Tuple) = xs
 # The radius can vary by dimension and side
 # NTuple of tuples - end state
 _radii(::Val{N}, r::NTuple{N,<:Tuple{<:Integer,<:Integer}}) where N = r
+_radii(::Val{0}, r::Tuple{}) = ()
 # NTuple of Integers, map so both sides are the same
 _radii(::Val{N}, rs::NTuple{N,Integer}) where N = map(r -> (r, r), rs) 
 # Integer, make an Ntuple{N,NTuple{2,Integer}}

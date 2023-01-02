@@ -51,9 +51,14 @@ Base.iterate(A::AbstractNeighborhoodArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:
 Base.parent(A::AbstractNeighborhoodArray) = A.parent
 for f in (:getindex, :view, :dotview)
     @eval begin
-        Base.@propagate_inbounds Base.$f(A::AbstractNeighborhoodArray, I::Union{Colon,Int64,AbstractArray}...) =
-            Base.$f(parent(A), I...)
-        Base.@propagate_inbounds Base.$f(A::AbstractNeighborhoodArray, i1::Int, I::Int...) = Base.$f(parent(A), i1, I...)
+        Base.@propagate_inbounds function Base.$f(A::AbstractNeighborhoodArray, I::Union{Colon,Int64,AbstractArray}...)
+            @boundscheck checkbounds(A, I...)
+            @inbounds Base.$f(parent(A), I...)
+        end
+        Base.@propagate_inbounds function Base.$f(A::AbstractNeighborhoodArray, i1::Int, I::Int...)
+            @boundscheck checkbounds(A, i1, I...)
+            @inbounds Base.$f(parent(A), i1, I...)
+        end
     end
 end
 Base.@propagate_inbounds Base.setindex!(d::AbstractNeighborhoodArray, x, I::Int...) =
