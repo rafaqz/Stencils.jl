@@ -64,5 +64,5 @@ end
 # (gives the length of a VonNeumann neighborhood + center)
 function delannoy(a, b)
     (a == 0 || b == 0) && return 1
-    return delannoy(a−1, b) + delannoy(a, b−1) + delannoy(a−1, b−1) 
+    return delannoy(a-1, b) + delannoy(a, b-1) + delannoy(a-1, b-1) 
 end
