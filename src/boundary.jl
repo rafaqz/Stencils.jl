@@ -45,6 +45,7 @@ output = sim!(output, rule; boundary=Remove())
 struct Remove{PV} <: BoundaryCondition
     padval::PV
 end
+Remove() = Remove(nothing)
 
 padval(bc::Remove) = bc.padval
 
@@ -54,7 +55,7 @@ padval(bc::Remove) = bc.padval
 # See interface docs
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I::Tuple) = inbounds(data, I...)
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I...) = 
-#     _inbounds(boundary_condition(data), gridsize(data), I...)
+#     _inbounds(boundary(data), gridsize(data), I...)
 
 # @inline function _inbounds(boundary::BoundaryCondition, size::Tuple, i1, i2)
 #     a, inbounds_a = _inbounds(boundary, size[1], i1)
@@ -92,7 +93,7 @@ padval(bc::Remove) = bc.padval
 # Padded{S,K}(padval::V) where {S,K,V} = Padded{S,K,V}(padval)
 
 # @generated function unsafe_readneighbors(
-#     hood::Neighborhood{R,N}, boundary_condition::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
+#     hood::Neighborhood{R,N}, boundary::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
 # ) where {T,R,N,V,S,K}
 #     inner_size = tuple_contents(S)
 #     known_inds = tuple_contents(K)
@@ -105,7 +106,7 @@ padval(bc::Remove) = bc.padval
 #                 return push!(expr, (i isa Colon ? :(I[$n]) : i))
 #             end
 #             if i + o < 1 
-#                 if boundary_condition <: Remove
+#                 if boundary <: Remove
 #                     # Short cut out of the loop and just return the padval
 #                     return :(padinfo.padval)  
 #                 else # Wrap
@@ -113,7 +114,7 @@ padval(bc::Remove) = bc.padval
 #                     push!(expr, i + o + s)
 #                 end
 #             elseif i + o > s
-#                 if boundary_condition <: Remove
+#                 if boundary <: Remove
 #                     # Short cut out of the loop and just return the padvala
 #                     return :(padinfo.padval)  
 #                 else # Wrap

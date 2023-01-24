@@ -16,7 +16,7 @@ These can be counted, summed, compared, or multiplied with a kernel in an
 `AbstractKernelNeighborhood`, using [`kernelproduct`](@ref).
 
 In `SetNeighborhoodRule` neighborhoods give the locations of cells around the central cell,
-as [`offsets`] and absolute [`positions`](@ref) around the index of each neighbor. These
+as [`offsets`] and absolute [`indices`](@ref) around the index of each neighbor. These
 can then be written to manually.
 """
 abstract type Neighborhood{R,N,L} end
@@ -107,7 +107,7 @@ end
 
 List all distance zones as a Tuple
 """
-distance_zones(hood::Neighborhood) = map(prod, offsets(hood))
+distance_zones(hood::Neighborhood) = map(o -> abs(prod(o)) + 1, offsets(hood))
 
 Base.eltype(hood::Neighborhood) = eltype(neighbors(hood))
 Base.length(hood::Neighborhood) = length(typeof(hood))

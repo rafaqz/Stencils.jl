@@ -9,7 +9,7 @@ The result is smaller than `A` on all sides, by the neighborhood radius.
 function broadcast_neighborhood(f, source::AbstractNeighborhoodArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
     _checksizes((source, args...))
     # Get the type of the neighborhood
-    bc = boundary_condition(source)
+    bc = boundary(source)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     L = length(neighborhood(source))
     emptyneighbors = SVector{L,T}(ntuple(_ -> zero(T), L))
@@ -31,15 +31,23 @@ end
 kernel_setup() = KernelAbstractions.CPU(), 1
 
 """
-    broadcast_neighborhood!(f, hood::Neighborhood{R}, dest, sources...)
+    broadcast_neighborhood!(f, dest, source::NeighborhoodArray, args...)
+    broadcast_neighborhood!(f, A::SwitchingNeighborhoodArray, args...)
 
-Simple neighborhood broadcast where `f` is passed each neighborhood
-of `src` (except padding), writing the result of `f` to `dest`.
+Neighborhood broadcast where `f` is passed each neighborhood
+of `src`, writing the result of `f` to `dest`.
+
+For SwitchingNeighborhoodArray the internal source and dest arrays are used,
+returning a switched version of the array.
 
 `dest` must either be smaller than `src` by the neighborhood radius on all
 sides, or be the same size, in which case it is assumed to also be padded.
 """
-function broadcast_neighborhood!(f, dest, source::NeighborhoodArray, args::AbstractArray...)
+function broadcast_neighborhood!(f, A::SwitchingNeighborhoodArray, args::AbstractArray...)
+    broadcast_neighborhood!(f, dest(A), A, args...)
+    return switch(A)
+end
+function broadcast_neighborhood!(f, dest, source::AbstractNeighborhoodArray, args::AbstractArray...)
     _checksizes((dest, source, args...))
     update_boundary!(source)
     device = KernelAbstractions.get_device(parent(source))
