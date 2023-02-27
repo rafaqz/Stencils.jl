@@ -107,7 +107,8 @@ end
 
 List all distance zones as a Tuple
 """
-distance_zones(hood::Neighborhood) = map(o -> abs(prod(o)) + 1, offsets(hood))
+distance_zones(hood::Neighborhood) =
+    map(o -> sum(map(abs, o)), offsets(hood))
 
 Base.eltype(hood::Neighborhood) = eltype(neighbors(hood))
 Base.length(hood::Neighborhood) = length(typeof(hood))
@@ -124,7 +125,7 @@ Base.keys(hood::Neighborhood{<:Any,<:Any,L}) where L = StaticArrays.SOneTo(L)
 function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R,N}) where {R,N}
     rs = _radii(Val{N}(), R)
     println(typeof(hood))
-    bools = bool_array(hood)
+    bools = _bool_array(hood)
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood)) 
         println(io)
@@ -135,18 +136,18 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Neighborhood{R,N}) wher
     end
 end
 
-function bool_array(hood::Neighborhood{R,1}) where {R}
+function _bool_array(hood::Neighborhood{R,1}) where {R}
     rs = _radii(hood)
-    Bool[((i,) in offsets(hood)) for i in rs[1][1]:rs[1][2]]
+    Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]]
 end
-function bool_array(hood::Neighborhood{R,2}) where {R}
+function _bool_array(hood::Neighborhood{R,2}) where {R}
     rs = _radii(hood)
-    Bool[((i, j) in offsets(hood)) for i in rs[1][1]:rs[1][2], j in rs[1][1]:rs[1][2]]
+    Bool[((i, j) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
-function bool_array(hood::Neighborhood{R,3}) where {R}
+function _bool_array(hood::Neighborhood{R,3}) where {R}
     rs = _radii(hood)
     # Just show the center slice
-    Bool[((i, j, 0) in offsets(hood)) for i in rs[1][1]:rs[1][2], j in rs[1][1]:rs[1][2]]
+    Bool[((i, j, 0) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
 
 # Utils

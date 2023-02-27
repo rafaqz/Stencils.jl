@@ -37,9 +37,10 @@ Window{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Window{R,N,L,T}(_neighbor
 Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
 
 # The central cell is included
-@inline function offsets(::Type{<:Window{R,N}}) where {R,N}
+@generated function offsets(::Type{<:Window{R,N}}) where {R,N}
     D = 2R + 1
-    SVector(ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N))
+    vals = ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N)
+    return :(SVector($vals))
 end
 
 @inline setneighbors(::Window{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =

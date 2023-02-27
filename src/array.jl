@@ -430,7 +430,7 @@ struct SwitchingNeighborhoodArray{S,R,T,N,A<:AbstractArray{T,N},H<:Neighborhood{
         return new{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
     end
 end
-function NeighborhoodArray(parent::AbstractArray, hood::Neighborhood{R}, bc, padding) where R
+function SwitchingNeighborhoodArray(parent::AbstractArray, hood::Neighborhood{R}, bc, padding) where R
     padded_source = pad_array(padding, bc, hood, parent)
     padded_dest = pad_array(padding, bc, hood, parent)
     S = Tuple{_size(padding, hood, padded_source)...}
@@ -444,7 +444,7 @@ function SwitchingNeighborhoodArray(parent::AbstractArray{<:Any,N}, neighborhood
     boundary=Remove(zero(eltype(parent))),
     padding=Conditional(),
 ) where N
-    NeighborhoodArray(parent, neighborhood, boundary, padding)
+    SwitchingNeighborhoodArray(parent, neighborhood, boundary, padding)
 end
 
 switch(A::SwitchingNeighborhoodArray) =
