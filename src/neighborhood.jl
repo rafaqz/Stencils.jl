@@ -74,7 +74,7 @@ function offsets end
 offsets(hood::Neighborhood) = offsets(typeof(hood))
 getoffset(hood, i::Int) = offsets(hood)[i]
 
-cartesian_offsets(hood::Neighborhood) = map(CartesianIndex, offsets(typeof(hood)))
+@generated cartesian_offsets(hood::Neighborhood) = map(CartesianIndex, offsets(hood))
     
 """
     indices(x::Union{Neighborhood,NeighborhoodRule}}, I::Tuple) -> iterable
@@ -96,7 +96,7 @@ diagonally adjacent cell has a distance of `sqrt(2.0)`.
 
 Values are calculated at compile time, so `distances` can be used with little overhead.
 """
-function distances(hood::Neighborhood)
+@generated function distances(hood::Neighborhood)
     map(offsets(hood)) do O
         sqrt(sum(o -> o^2, O))
     end
@@ -107,8 +107,9 @@ end
 
 List all distance zones as a Tuple
 """
-distance_zones(hood::Neighborhood) =
+@generated function distance_zones(hood::Neighborhood)
     map(o -> sum(map(abs, o)), offsets(hood))
+end
 
 Base.eltype(hood::Neighborhood) = eltype(neighbors(hood))
 Base.length(hood::Neighborhood) = length(typeof(hood))
