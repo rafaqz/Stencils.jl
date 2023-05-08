@@ -1,26 +1,26 @@
 using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
 
-@testset "NeighborhoodArray" begin
+@testset "StencilArray" begin
 
     @testset "1d" begin
         r = rand(100)
-        A = NeighborhoodArray(r, VonNeumann{3,1}(); padding=Conditional(), boundary_condition=Remove(0.0));
-        B = NeighborhoodArray(r, Window{10,1}(); padding=Halo{:out}(), boundary_condition=Remove(0.0));
-        C = NeighborhoodArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary_condition=Wrap());
+        A = StencilArray(r, VonNeumann{3,1}(); padding=Conditional(), boundary_condition=Remove(0.0));
+        B = StencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary_condition=Remove(0.0));
+        C = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary_condition=Wrap());
         @test size(A) == size(parent(A)) == (100,)
         @test size(B) == (100,)
         @test size(parent(B)) == (120,)
         @test size(C) == (80,)
         @test size(parent(C)) == (100,)
-        D = NeighborhoodArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary_condition=Remove(0.0));
+        D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary_condition=Remove(0.0));
         D .= 0.0
         @test all(==(0.0), D)
     end
     @testset "2d" begin
         r = rand(100, 100)
-        A = NeighborhoodArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary_condition=Remove(0.0));
-        B = NeighborhoodArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
-        C = NeighborhoodArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
+        A = StencilArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary_condition=Remove(0.0));
+        B = StencilArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
+        C = StencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100)
         @test size(B) == (100, 100)
         @test size(parent(B)) == (120, 120)
@@ -43,15 +43,15 @@ using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
     end
     @testset "3d" begin
         r = rand(100, 100, 100)
-        A = NeighborhoodArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary_condition=Remove(0.0));
-        B = NeighborhoodArray(r, Window{10,3}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
-        C = NeighborhoodArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
+        A = StencilArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary_condition=Remove(0.0));
+        B = StencilArray(r, Window{10,3}(), padding=Halo{:out}(), boundary_condition=Remove(0.0));
+        C = StencilArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary_condition=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100, 100)
         @test size(B) == (100, 100, 100)
         @test size(parent(B)) == (120, 120, 120)
         @test size(C) == (80, 80, 80)
         @test size(parent(C)) == (100, 100, 100)
-        D = NeighborhoodArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary_condition=Wrap());
+        D = StencilArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary_condition=Wrap());
         D .= 0.0
         axes(parent(D))
         @test all(==(0.0), D)
@@ -73,9 +73,9 @@ end
 #     end
 #     r = rand(1000, 1000)
 #     r = CuArray(r)
-#     A = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Conditional(), boundary_condition=Remove(zero(eltype(r))));
-#     B = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Halo{:out}(), boundary_condition=Remove(zero(eltype(r))));
-#     C = NeighborhoodArray(r; neighborhood=Moore{5,2}(), padding=Halo{:in}(), boundary_condition=Remove(zero(eltype(r))));
+#     A = StencilArray(r; neighborhood=Moore{5,2}(), padding=Conditional(), boundary_condition=Remove(zero(eltype(r))));
+#     B = StencilArray(r; neighborhood=Moore{5,2}(), padding=Halo{:out}(), boundary_condition=Remove(zero(eltype(r))));
+#     C = StencilArray(r; neighborhood=Moore{5,2}(), padding=Halo{:in}(), boundary_condition=Remove(zero(eltype(r))));
 #     @time broadcast_neighborhood(f, A)
 #     @time broadcast_neighborhood(f, B)
 #     @time broadcast_neighborhood(f, C)
@@ -86,10 +86,10 @@ end
 #     @profview for _ in 1:100 broadcast_neighborhood(f, B) end
 #     @profview for _ in 1:100 broadcast_neighborhood(f, C) end
 
-#     C = NeighborhoodArray(r; neighborhood=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
+#     C = StencilArray(r; neighborhood=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
 #     @benchmark
 #     @time broadcast_neighborhood(f, D)
-#     E = NeighborhoodArray(r; neighborhood=VonNeumann{50}(), padding=Padded{:out}(), boundary_condition=Remove(0.0));
+#     E = StencilArray(r; neighborhood=VonNeumann{50}(), padding=Padded{:out}(), boundary_condition=Remove(0.0));
 #     @time broadcast_neighborhood(f, E)
 #     @profview broadcast_neighborhood(f, E)
 # end

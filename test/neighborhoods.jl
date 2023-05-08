@@ -60,7 +60,7 @@ end
 
 @testset "VonNeumann" begin
     h = VonNeumann{1}()
-    A = NeighborhoodArray(init, h)
+    A = StencilArray(init, h)
     vonneumann = Neighborhoods.setneighbors(h, neighbors(A, (2, 2))) 
     @test offsets(vonneumann) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(vonneumann) == 1
@@ -84,11 +84,11 @@ end
            0 0 1 0 1
            1 0 1 0 1]
     h1 = Positional(((-1,-1), (2,-2), (2,2), (-1,2), (0, 0)))
-    custom1 = neighborhood(NeighborhoodArray(win, h1), (3, 3)) 
+    custom1 = neighborhood(StencilArray(win, h1), (3, 3)) 
     h2 = Positional{((-1,-1), (0,-1), (1,-1), (2,-1), (0,0))}()
-    custom2 = neighborhood(NeighborhoodArray(win, h2), (3, 3)) 
+    custom2 = neighborhood(StencilArray(win, h2), (3, 3)) 
     l = Layered((Positional((-1,1), (-2,2)), Positional((1,2), (2,2), (0, 2))))
-    layered = neighborhood(NeighborhoodArray(win, l), (3, 3)) 
+    layered = neighborhood(StencilArray(win, l), (3, 3)) 
 
     @test neighbors(custom1) == SVector(0, 1, 1, 0, 0)
     @test sum(custom1) == 2
@@ -104,7 +104,7 @@ end
     @test radius(lhood) == ((-2, 2), (-2, 2))
     @test offsets(lhood) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
     @test indices(lhood, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
-    lhood1 = neighborhood(NeighborhoodArray(reshape(1:25, 5, 5), lhood), (3, 3))
+    lhood1 = neighborhood(StencilArray(reshape(1:25, 5, 5), lhood), (3, 3))
     @test neighbors(lhood1) == (SVector(7, 19), SVector(1, 25))
 end
 

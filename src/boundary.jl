@@ -76,7 +76,7 @@ padval(bc::Remove) = bc.padval
 # # See interface docs
 # @inline isinbounds(data::Union{AbstractSimData}, I::Tuple) = isinbounds(data, I...)
 # @inline isinbounds(data::Union{AbstractSimData}, I...) = _isinbounds(gridsize(data), I...)
-# @inline isinbounds(data::AbstractNeighborhoodArray, I...) = _isinbounds(gridsize(data), I...)
+# @inline isinbounds(data::AbstractStencilArray, I...) = _isinbounds(gridsize(data), I...)
 
 # @inline _isinbounds(size::Tuple, I...) = all(map(_isinbounds, size, I))
 # @inline _isinbounds(size, i) = i >= one(i) && i <= size

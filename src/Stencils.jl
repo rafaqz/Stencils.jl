@@ -1,4 +1,4 @@
-module Neighborhoods
+module Stencils
 
 using Adapt, 
       ConstructionBase,
@@ -9,25 +9,25 @@ using Adapt,
       UnicodeGraphics
 
 export Neighborhood, Window, Kernel, Moore, VonNeumann, Positional, Layered
-export NeighborhoodArray
+export StencilArray
 export BoundaryCondition, Wrap, Remove
 export Padding, Conditional, Halo
 
 export neighborhood, neighbors, offsets, indices, distances, radius, diameter, kernel, kernelproduct
-export broadcast_neighborhood, broadcast_neighborhood!
+export broadcast_stencil, broadcast_stencil!
 
 include("neighborhood.jl")
 include("boundary.jl")
 include("padding.jl")
 include("array.jl")
-include("broadcast_neighborhood.jl")
+include("broadcast_stencil.jl")
 
-include("neighborhoods/window.jl")
-include("neighborhoods/moore.jl")
-include("neighborhoods/vonneumman.jl")
-include("neighborhoods/positional.jl")
-include("neighborhoods/layered.jl")
-include("neighborhoods/kernel.jl")
+include("stencils/window.jl")
+include("stencils/moore.jl")
+include("stencils/vonneumman.jl")
+include("stencils/positional.jl")
+include("stencils/layered.jl")
+include("stencils/kernel.jl")
 
 end # Module Neighborhoods
 
