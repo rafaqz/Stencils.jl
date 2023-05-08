@@ -3,7 +3,7 @@
     VonNeumann(; radius=1, ndims=2)
     VonNeumann{R,N}()
 
-A 2 dimensionsl Von Neumann neighborhood is a damond-shaped, omitting the central cell:
+A 2 dimensionsl Von Neumann stencil is a damond-shaped, omitting the central cell:
 
 Radius `R = 1`:
 
@@ -26,10 +26,10 @@ N = 1   N = 2
 
 In 1 dimension it is identical to [`Moore`](@ref).
 
-Using `R` and `N` type parameters removes runtime cost of generating the neighborhood,
+Using `R` and `N` type parameters removes runtime cost of generating the stencil,
 compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Neighborhood{R,N,L}
+struct VonNeumann{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Stencil{R,N,L}
     _neighbors::T
 end
 VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)
@@ -61,7 +61,7 @@ end
 
 # delannoy 
 # Calculate delannoy numbers recursively
-# (gives the length of a VonNeumann neighborhood + center)
+# (gives the length of a VonNeumann stencil + center)
 function delannoy(a, b)
     (a == 0 || b == 0) && return 1
     return delannoy(a-1, b) + delannoy(a, b-1) + delannoy(a-1, b-1) 

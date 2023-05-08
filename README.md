@@ -1,4 +1,4 @@
-# Neighborhoods
+# Stencils
 
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://rafaqz.github.io/Neighborhoods.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://rafaqz.github.io/Neighborhoods.jl/dev)
@@ -6,19 +6,23 @@
 [![codecov.io](http://codecov.io/github/rafaqz/Neighborhoods.jl/coverage.svg?branch=master)](http://codecov.io/github/rafaqz/Neighborhoods.jl?branch=master)
 [![Aqua.jl Quality Assurance](https://img.shields.io/badge/Aqua.jl-%F0%9F%8C%A2-aqua.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
-Neighborhoods.jl streamlines working with neighborhoods - cellular automata,
-convolutions and filters, for neighborhoods of any size and
-shape.
+Stencils.jl streamlines working with stencils and neighborhoods - 
+cellular automata, convolutions and filters, for neighborhoods of any 
+(smallish) size and shape.
 
-This package exists to be generic, extremely fast, and hardware agnostic.
+Stencils.jl defines only direct kernels, no FFTs. But it's fast at 
+broadcasting direct kernels. Stencils are StaticArrays.jl vectors 
+and are constucted with generated code for performance.
 
-It will:
+Stencils.jl will:
 
-- Run on CPUs and GPUs
-- Use any neighborhood shapes and sizes, in any combination.
+- Run on parallel CPUs and GPUs using KernelAbstractions.jl
+- Use any stencil neighborhood shapes and sizes.
 - Have an easy to use, concise syntax.
-- Allow broadcasting neighborhood operations.
-- Allow using neighborhoods in arbitrary loops, such as in spatial cost-distance models.
-- Be usfull for image filtering and convolutions, but it will have no explicit image or color dependencies.
+- Allow broadcasting stencil operations.
+- Allow using stencil in arbitrary loops both to read and write, 
+  such as in spatial cost-distance models.
 - Provide tools for array switching: where two-layered arrays can be used for
   multiple steps of a simulations, or applying filters repeatedly using the same memory.
+
+It should Be usfull for image filtering and convolutions, but has no explicit image or color dependencies.

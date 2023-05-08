@@ -3,7 +3,7 @@ abstract type Padding end
 """
     Halo{X} <: Padding
 
-Padding that uses an in-memory halo around the array so that parts of a neighborhood
+Padding that uses an in-memory halo around the array so that parts of a stencil
 that go off the edge of the array can index directly into it without a bounds check
 or any conditional. This has the benefit of possibly better performance during window
 broadcasts, but some downsides.
@@ -34,12 +34,12 @@ struct Conditional <: Padding end
 
 
 const RADIUSDOC = """
-    `radius` can be a `Neighborhood`, an `Int`, or a tuple of tuples,
+    `radius` can be a `Stencil`, an `Int`, or a tuple of tuples,
     e.g. for 2d it could be: `((1, 2), (2, 1))::Tuple{Tuple{Int,Int},Tuple{Int,Int}}`.
     """
 
 """
-    outer_axes(A, hood::Neighborhood{R})
+    outer_axes(A, hood::Stencil{R})
     outer_axes(A, radius::Int)
 
 Add padding to axes of array `A`, returning a `Tuple` of `UnitRange`.
@@ -94,8 +94,8 @@ $RADIUSDOC
 
 `padval` defaults to `zero(eltype(A))`.
 """
-pad_array(::Conditional, ::BoundaryCondition, hood::Neighborhood, parent::AbstractArray) = parent
-function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Neighborhood, parent::AbstractArray{T}) where T
+pad_array(::Conditional, ::BoundaryCondition, hood::Stencil, parent::AbstractArray) = parent
+function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Stencil, parent::AbstractArray{T}) where T
     rs = _radii(parent, hood)
     padded_axes = outer_axes(parent, rs)
     padded_parent = similar(parent, T, length.(padded_axes))
@@ -103,6 +103,6 @@ function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Neighborhood, pare
     padded_offset = OffsetArray(padded_parent, padded_axes)
     return padded_offset
 end
-function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::Neighborhood, parent::AbstractArray)
+function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::Stencil, parent::AbstractArray)
     return OffsetArray(parent, offset_axes(parent, hood))
 end
