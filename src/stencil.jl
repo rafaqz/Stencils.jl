@@ -1,23 +1,12 @@
 """
     Stencil
 
-Stencils define the pattern of surrounding cells in the "stencil"
-of the current cell. The `neighbors` function returns the surrounding
-cells as an iterable.
+Stencils define a pattern of neighboring cells around the current cell. 
+The [`neighbors`](@ref) function returns the surrounding cells as an iterable.
 
 The main kinds of stencil are demonstrated below:
 
-![Stencils](https://raw.githubusercontent.com/cesaraustralia/DynamicGrids.jl/media/Stencils.png)
-
-Stencils can be used in `StencilRule` and `SetStencilRule` -
-the same shapes with different purposes. In a `StencilRule` the stencil specifies
-which cells around the current cell are returned as an iterable from the `neighbors` function.
-These can be counted, summed, compared, or multiplied with a kernel in an
-`AbstractKernelStencil`, using [`kernelproduct`](@ref).
-
-In `SetStencilRule` stencils give the locations of cells around the central cell,
-as [`offsets`] and absolute [`indices`](@ref) around the index of each neighbor. These
-can then be written to manually.
+![Stencils](https://raw.githubusercontent.com/cesaraustralia/DynamicGrids.jl/media/Neighborhoods.png)
 """
 abstract type Stencil{R,N,L} end
 
@@ -29,8 +18,8 @@ ConstructionBase.constructorof(::Type{<:T}) where T <: Stencil{R,N,L} where {R,N
     kernelproduct(hood::Stencil, kernel)
 
 Returns the vector dot product of the stencil and the kernel,
-although differing from `dot` in that the dot product is not taken for
-vector members of the stencil - they are treated as scalars.
+although differing from `dot` in that the dot product is not taken
+iteratively for members of the stencil - they are treated as scalars.
 """
 function kernelproduct end
 
