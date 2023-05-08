@@ -26,3 +26,6 @@ Stencils.jl will:
   multiple steps of a simulations, or applying filters repeatedly using the same memory.
 
 It should Be usfull for image filtering and convolutions, but has no explicit image or color dependencies.
+
+Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, and some coordination
+may be required over 2023.
