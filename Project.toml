@@ -1,5 +1,5 @@
-name = "Neighborhoods"
-uuid = "d59d076e-d651-40c5-bb74-151a0352d31d"
+name = "Stencils"
+uuid = "264155e8-78a8-466a-aa59-c9b28c34d21a"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
 version = "0.1.0"
 
