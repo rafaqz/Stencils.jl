@@ -37,6 +37,7 @@ function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArr
     )
     return dst
 end
+# Ambiguity
 function copy!(S::AbstractStencilArray{<:Any,R,T,1} where T, A::AbstractVector) where R
     pad_axes = map(ax -> ax .+ R, axes(A))
     copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
@@ -47,11 +48,11 @@ function copy!(A::AbstractVector, S::AbstractStencilArray{<:Any,R,T,1} where T) 
     copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
     return A
 end
-function copy!(A::SparseArrays.AbstractCompressedVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
-    pad_axes = map(ax -> ax .+ R, axes(A))
-    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
-    return A
-end
+# function copy!(A::SparseArrays.AbstractCompressedVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
+#     pad_axes = map(ax -> ax .+ R, axes(A))
+#     copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+#     return A
+# end
 
 """
 
