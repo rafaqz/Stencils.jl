@@ -1,5 +1,5 @@
 """
-    Window <: Neighborhood
+    Window <: Stencil
 
     Window(; radius=1, ndims=2)
     Window{R}(; ndims=2)
@@ -26,7 +26,7 @@ N = 1   N = 2
         ▀▀▀▀▀
 ```
 """
-struct Window{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Neighborhood{R,N,L}
+struct Window{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Stencil{R,N,L}
     _neighbors::T
 end
 Window(; radius=1, ndims=2) = Window{radius,ndims}(args...)

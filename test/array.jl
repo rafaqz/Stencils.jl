@@ -1,4 +1,4 @@
-using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays
+using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays
 
 @testset "StencilArray" begin
 
@@ -73,32 +73,32 @@ end
 #     end
 #     r = rand(1000, 1000)
 #     r = CuArray(r)
-#     A = StencilArray(r; neighborhood=Moore{5,2}(), padding=Conditional(), boundary_condition=Remove(zero(eltype(r))));
-#     B = StencilArray(r; neighborhood=Moore{5,2}(), padding=Halo{:out}(), boundary_condition=Remove(zero(eltype(r))));
-#     C = StencilArray(r; neighborhood=Moore{5,2}(), padding=Halo{:in}(), boundary_condition=Remove(zero(eltype(r))));
-#     @time broadcast_neighborhood(f, A)
-#     @time broadcast_neighborhood(f, B)
-#     @time broadcast_neighborhood(f, C)
-#     @benchmark broadcast_neighborhood(f, A)
-#     @benchmark broadcast_neighborhood(f, B)
-#     @benchmark broadcast_neighborhood(f, C)
-#     @profview for _ in 1:100 broadcast_neighborhood(f, A) end
-#     @profview for _ in 1:100 broadcast_neighborhood(f, B) end
-#     @profview for _ in 1:100 broadcast_neighborhood(f, C) end
+#     A = StencilArray(r; stencil=Moore{5,2}(), padding=Conditional(), boundary_condition=Remove(zero(eltype(r))));
+#     B = StencilArray(r; stencil=Moore{5,2}(), padding=Halo{:out}(), boundary_condition=Remove(zero(eltype(r))));
+#     C = StencilArray(r; stencil=Moore{5,2}(), padding=Halo{:in}(), boundary_condition=Remove(zero(eltype(r))));
+#     @time broadcast_stencil(f, A)
+#     @time broadcast_stencil(f, B)
+#     @time broadcast_stencil(f, C)
+#     @benchmark broadcast_stencil(f, A)
+#     @benchmark broadcast_stencil(f, B)
+#     @benchmark broadcast_stencil(f, C)
+#     @profview for _ in 1:100 broadcast_stencil(f, A) end
+#     @profview for _ in 1:100 broadcast_stencil(f, B) end
+#     @profview for _ in 1:100 broadcast_stencil(f, C) end
 
-#     C = StencilArray(r; neighborhood=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
+#     C = StencilArray(r; stencil=Moore{10}(), padding=Unpadded(), boundary_condition=Wrap());
 #     @benchmark
-#     @time broadcast_neighborhood(f, D)
-#     E = StencilArray(r; neighborhood=VonNeumann{50}(), padding=Padded{:out}(), boundary_condition=Remove(0.0));
-#     @time broadcast_neighborhood(f, E)
-#     @profview broadcast_neighborhood(f, E)
+#     @time broadcast_stencil(f, D)
+#     E = StencilArray(r; stencil=VonNeumann{50}(), padding=Padded{:out}(), boundary_condition=Remove(0.0));
+#     @time broadcast_stencil(f, E)
+#     @profview broadcast_stencil(f, E)
 # end
 
 @testset "pad/unpad axes" begin
     A = zeros(6, 7)
-    @test Neighborhoods.outer_axes(A, 2) == (-1:8, -1:9)
-    @test Neighborhoods.outer_axes(A, Moore(3)) == (-2:9, -2:10)
-    @test Neighborhoods.inner_axes(A, 2) == (3:4, 3:5)
-    @test Neighborhoods.inner_axes(A, VonNeumann(1)) == (2:5, 2:6)
+    @test Stencils.outer_axes(A, 2) == (-1:8, -1:9)
+    @test Stencils.outer_axes(A, Moore(3)) == (-2:9, -2:10)
+    @test Stencils.inner_axes(A, 2) == (3:4, 3:5)
+    @test Stencils.inner_axes(A, VonNeumann(1)) == (2:5, 2:6)
 end
 

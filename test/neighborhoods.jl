@@ -1,4 +1,4 @@
-using Neighborhoods, Test, LinearAlgebra, StaticArrays, OffsetArrays, BenchmarkTools
+using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, BenchmarkTools
 
 init = [0 0 0 1 1 1
         1 0 1 1 0 1
@@ -20,7 +20,7 @@ win3 = [1 1 1
 @testset "Moore" begin
     moore = Moore{1}(SVector(0,1,0,0,1,0,1,1))
 
-    # Neighborhoods.distance_zones(moore)
+    # Stencils.distance_zones(moore)
     @test radius(moore) == 1
     @test diameter(moore) == 3
     @test moore[1] == 0
@@ -50,7 +50,7 @@ end
     @test offsets(window) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
                                      (1, 0), (-1, 1), (0, 1), (1, 1))
 
-    window2 = Neighborhoods.setneighbors(window, SVector(win2...))
+    window2 = Stencils.setneighbors(window, SVector(win2...))
     @test neighbors(window2) == SVector(win2...)
 
     @test sum(Window{1}(win1)) == 1
@@ -61,7 +61,7 @@ end
 @testset "VonNeumann" begin
     h = VonNeumann{1}()
     A = StencilArray(init, h)
-    vonneumann = Neighborhoods.setneighbors(h, neighbors(A, (2, 2))) 
+    vonneumann = Stencils.setneighbors(h, neighbors(A, (2, 2))) 
     @test offsets(vonneumann) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(vonneumann) == 1
     @test diameter(vonneumann) == 3
@@ -84,11 +84,11 @@ end
            0 0 1 0 1
            1 0 1 0 1]
     h1 = Positional(((-1,-1), (2,-2), (2,2), (-1,2), (0, 0)))
-    custom1 = neighborhood(StencilArray(win, h1), (3, 3)) 
+    custom1 = stencil(StencilArray(win, h1), (3, 3)) 
     h2 = Positional{((-1,-1), (0,-1), (1,-1), (2,-1), (0,0))}()
-    custom2 = neighborhood(StencilArray(win, h2), (3, 3)) 
+    custom2 = stencil(StencilArray(win, h2), (3, 3)) 
     l = Layered((Positional((-1,1), (-2,2)), Positional((1,2), (2,2), (0, 2))))
-    layered = neighborhood(StencilArray(win, l), (3, 3)) 
+    layered = stencil(StencilArray(win, l), (3, 3)) 
 
     @test neighbors(custom1) == SVector(0, 1, 1, 0, 0)
     @test sum(custom1) == 2
@@ -104,7 +104,7 @@ end
     @test radius(lhood) == ((-2, 2), (-2, 2))
     @test offsets(lhood) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
     @test indices(lhood, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
-    lhood1 = neighborhood(StencilArray(reshape(1:25, 5, 5), lhood), (3, 3))
+    lhood1 = stencil(StencilArray(reshape(1:25, 5, 5), lhood), (3, 3))
     @test neighbors(lhood1) == (SVector(7, 19), SVector(1, 25))
 end
 
@@ -130,7 +130,7 @@ end
         off = ((0,-1),(-1,0),(1,0),(0,1))
         hood = Positional{off,1,2,4,}()
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))
-        k = Neighborhoods.setneighbors(Kernel(hood, 1:4), vals)
+        k = Stencils.setneighbors(Kernel(hood, 1:4), vals)
         @test kernelproduct(k) === 1 * 2 + 2 * 4 + 3 * 6 + 4 * 8 === 60
     end
 end

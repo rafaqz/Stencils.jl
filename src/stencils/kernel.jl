@@ -1,47 +1,47 @@
 """
-    AbstractKernelNeighborhood <: Neighborhood
+    AbstractKernelStencil <: Stencil
 
-Abstract supertype for kernel neighborhoods.
+Abstract supertype for kernel stencils.
 
-These can wrap any other neighborhood object, and include a kernel of
-the same length and positions as the neighborhood.
+These can wrap any other stencil object, and include a kernel of
+the same length and positions as the stencil.
 """
-abstract type AbstractKernelNeighborhood{R,N,L,H} <: Neighborhood{R,N,L} end
+abstract type AbstractKernelStencil{R,N,L,H} <: Stencil{R,N,L} end
 
-neighbors(hood::AbstractKernelNeighborhood) = neighbors(neighborhood(hood))
-offsets(::Type{<:AbstractKernelNeighborhood{<:Any,<:Any,<:Any,H}}) where H = offsets(H)
-positions(hood::AbstractKernelNeighborhood, I::Tuple) = positions(neighborhood(hood), I)
+neighbors(hood::AbstractKernelStencil) = neighbors(stencil(hood))
+offsets(::Type{<:AbstractKernelStencil{<:Any,<:Any,<:Any,H}}) where H = offsets(H)
+positions(hood::AbstractKernelStencil, I::Tuple) = positions(stencil(hood), I)
 
 """
-    kernel(hood::AbstractKernelNeighborhood) => iterable
+    kernel(hood::AbstractKernelStencil) => iterable
 
 Returns the kernel object, an array or iterable matching the length
-of the neighborhood.
+of the stencil.
 """
 function kernel end
-kernel(hood::AbstractKernelNeighborhood) = hood.kernel
+kernel(hood::AbstractKernelStencil) = hood.kernel
 
 """
-    neighborhood(x) -> Neighborhood
+    stencil(x) -> Stencil
 
-Returns a neighborhood object.
+Returns a stencil object.
 """
-function neighborhood end
-neighborhood(hood::AbstractKernelNeighborhood) = hood.neighborhood
+function stencil end
+stencil(hood::AbstractKernelStencil) = hood.stencil
 
 """
-    kernelproduct(hood::AbstractKernelNeighborhood)
-    kernelproduct(hood::Neighborhood, kernel)
+    kernelproduct(hood::AbstractKernelStencil)
+    kernelproduct(hood::Stencil, kernel)
 
-Take the vector dot produce of the neighborhood and the kernel,
+Take the vector dot produce of the stencil and the kernel,
 without recursion into the values of either. Essentially `Base.dot`
 without recursive calls on the contents, as these are rarely what is
 intended.
 """
-function kernelproduct(hood::AbstractKernelNeighborhood)
-    kernelproduct(neighborhood(hood), kernel(hood))
+function kernelproduct(hood::AbstractKernelStencil)
+    kernelproduct(stencil(hood), kernel(hood))
 end
-function kernelproduct(hood::Neighborhood{<:Any,<:Any,L}, kernel) where L
+function kernelproduct(hood::Stencil{<:Any,<:Any,L}, kernel) where L
     sum = zero(first(hood))
     @simd for i in 1:L
         @inbounds sum += hood[i] * kernel[i]
@@ -57,32 +57,32 @@ function kernelproduct(hood::Window{<:Any,<:Any,L}, kernel) where L
 end
 
 """
-    Kernel <: AbstractKernelNeighborhood
+    Kernel <: AbstractKernelStencil
 
-    Kernel(neighborhood, kernel)
+    Kernel(stencil, kernel)
 
-Wrap any other neighborhood object, and includes a kernel of
-the same length and positions as the neighborhood.
+Wrap any other stencil object, and includes a kernel of
+the same length and positions as the stencil.
 """
-struct Kernel{R,N,L,H,K} <: AbstractKernelNeighborhood{R,N,L,H}
-    neighborhood::H
+struct Kernel{R,N,L,H,K} <: AbstractKernelStencil{R,N,L,H}
+    stencil::H
     kernel::K
 end
 Kernel(A::AbstractMatrix) = Kernel(Window(A), A)
-function Kernel(hood::H, kernel::K) where {H<:Neighborhood{R,N,L},K} where {R,N,L}
+function Kernel(hood::H, kernel::K) where {H<:Stencil{R,N,L},K} where {R,N,L}
     length(hood) == length(kernel) || _kernel_length_error(hood, kernel)
     Kernel{R,N,L,H,K}(hood, kernel)
 end
-function Kernel{R,N,L}(hood::H, kernel::K) where {R,N,L,H<:Neighborhood{R,N,L},K}
+function Kernel{R,N,L}(hood::H, kernel::K) where {R,N,L,H<:Stencil{R,N,L},K}
     Kernel{R,N,L,H,K}(hood, kernel)
 end
 
 function _kernel_length_error(hood, kernel)
-    throw(ArgumentError("Neighborhood length $(length(hood)) does not match kernel length $(length(kernel))"))
+    throw(ArgumentError("Stencil length $(length(hood)) does not match kernel length $(length(kernel))"))
 end
 
 function setneighbors(n::Kernel{R,N,L,<:Any,K}, _neighbors) where {R,N,L,K}
-    hood = setneighbors(neighborhood(n), _neighbors)
+    hood = setneighbors(stencil(n), _neighbors)
     return Kernel{R,N,L,typeof(hood),K}(hood, kernel(n))
 end
 

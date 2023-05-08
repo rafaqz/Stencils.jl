@@ -8,15 +8,15 @@ using Adapt,
       StaticArrays,
       UnicodeGraphics
 
-export Neighborhood, Window, Kernel, Moore, VonNeumann, Positional, Layered
+export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered
 export StencilArray
 export BoundaryCondition, Wrap, Remove
 export Padding, Conditional, Halo
 
-export neighborhood, neighbors, offsets, indices, distances, radius, diameter, kernel, kernelproduct
+export stencil, neighbors, offsets, indices, distances, radius, diameter, kernel, kernelproduct
 export broadcast_stencil, broadcast_stencil!
 
-include("neighborhood.jl")
+include("stencil.jl")
 include("boundary.jl")
 include("padding.jl")
 include("array.jl")
@@ -29,5 +29,5 @@ include("stencils/positional.jl")
 include("stencils/layered.jl")
 include("stencils/kernel.jl")
 
-end # Module Neighborhoods
+end # Module Stencils
 

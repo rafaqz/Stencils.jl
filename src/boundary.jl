@@ -2,8 +2,8 @@
     BoundaryCondition
 
 Abstract supertype for flags that specify the boundary conditions used in the simulation,
-used in [`inbounds`](@ref) and to update [`NeighborhoodRule`](@ref) grid padding.
-These determine what happens when a neighborhood or jump extends outside of the grid.
+used in [`inbounds`](@ref) and to update [`StencilRule`](@ref) grid padding.
+These determine what happens when a stencil or jump extends outside of the grid.
 """
 abstract type BoundaryCondition end
 
@@ -93,7 +93,7 @@ padval(bc::Remove) = bc.padval
 # Padded{S,K}(padval::V) where {S,K,V} = Padded{S,K,V}(padval)
 
 # @generated function unsafe_readneighbors(
-#     hood::Neighborhood{R,N}, boundary::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
+#     hood::Stencil{R,N}, boundary::Union{Remove,Wrap}, padinfo::Padded{S,K,V}, A::AbstractArray{T,N}, I::NTuple{N,Int}
 # ) where {T,R,N,V,S,K}
 #     inner_size = tuple_contents(S)
 #     known_inds = tuple_contents(K)
@@ -129,7 +129,7 @@ padval(bc::Remove) = bc.padval
 #     return neighbor_exprs
 # end
 
-# function columns(hood::Neighborhood{R}, A) where {R}
+# function columns(hood::Stencil{R}, A) where {R}
     # unsafe_readneighbors(
 # end
 

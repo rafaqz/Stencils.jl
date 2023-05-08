@@ -3,16 +3,16 @@
 
     Layered(layers::...)
 
-`Tuple` or `NamedTuple` of neighborhoods that can be used together.
+`Tuple` or `NamedTuple` of stencils that can be used together.
 
 `neighbors` for `Layered` returns a tuple of iterators
-for each neighborhood layer.
+for each stencil layer.
 """
-struct Layered{R,N,L,La} <: Neighborhood{R,N,L}
-    "A tuple of custom neighborhoods"
+struct Layered{R,N,L,La} <: Stencil{R,N,L}
+    "A tuple of custom stencils"
     layers::La
 end
-Layered(layers::Neighborhood...) = Layered(layers)
+Layered(layers::Stencil...) = Layered(layers)
 function Layered(layers::Union{NamedTuple,Tuple}, _neighbors=nothing)
     N = ndims(first(layers))
     R = if length(layers) > 1
@@ -41,7 +41,7 @@ layers(hood::Layered) = hood.layers
     Layered{R,N,L}(map(setneighbors, layers(h), layer_neighbors))
 end
 
-@inline function unsafe_neighbors(A::AbstractNeighborhoodArray, hood::Layered, I::CartesianIndex)
+@inline function unsafe_neighbors(A::AbstractStencilArray, hood::Layered, I::CartesianIndex)
     map(l -> unsafe_neighbors(A, l, I), layers(hood))
 end
 

@@ -1,29 +1,29 @@
 """
-    broadcast_stencil(f, hood::Neighborhood, args...)
+    broadcast_stencil(f, hood::Stencil, args...)
 
 Simple stencil application, where `f` is passed
-each neighborhood in `A`, returning a new array.
+each stencil in `A`, returning a new array.
 
-The result is smaller than `A` on all sides, by the neighborhood radius.
+The result is smaller than `A` on all sides, by the stencil radius.
 """
 function broadcast_stencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
     _checksizes((source, args...))
-    # Get the type of the neighborhood
+    # Get the type of the stencil
     bc = boundary(source)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
-    L = length(neighborhood(source))
+    L = length(stencil(source))
     emptyneighbors = SVector{L,T}(ntuple(_ -> zero(T), L))
-    H = typeof(setneighbors(neighborhood(source), emptyneighbors))
+    H = typeof(setneighbors(stencil(source), emptyneighbors))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
     T_return = Base._return_type(f, Tuple{H,map(eltype, args)...})
     dest = similar(parent(source), T_return, size(source))
     broadcast_stencil!(f, dest, source, args...)
 end
-broadcast_stencil(f, hood::Neighborhood, A::AbstractArray, args::AbstractArray...; kw...) =
+broadcast_stencil(f, hood::Stencil, A::AbstractArray, args::AbstractArray...; kw...) =
     broadcast_stencil(f, StencilArray(A, hood; kw...), args...)
 
-_emptyhood(x) = _emptyhood(x, neighborhood(x))
-function _emptyhood(x::AbstractArray{T}, hood::Neighborhood{<:Any,<:Any,L}) where {T,L} 
+_emptyhood(x) = _emptyhood(x, stencil(x))
+function _emptyhood(x::AbstractArray{T}, hood::Stencil{<:Any,<:Any,L}) where {T,L} 
     z = zero(T)
     return SVector(ntuple(_ -> z, Val{L}()))
 end
@@ -34,13 +34,13 @@ kernel_setup() = KernelAbstractions.CPU(), 1
     broadcast_stencil!(f, dest, source::StencilArray, args...)
     broadcast_stencil!(f, A::SwitchingStencilArray, args...)
 
-Neighborhood broadcast where `f` is passed each neighborhood
+Stencil broadcast where `f` is passed each stencil
 of `src`, writing the result of `f` to `dest`.
 
 For SwitchingStencilArray the internal source and dest arrays are used,
 returning a switched version of the array.
 
-`dest` must either be smaller than `src` by the neighborhood radius on all
+`dest` must either be smaller than `src` by the stencil radius on all
 sides, or be the same size, in which case it is assumed to also be padded.
 """
 function broadcast_stencil!(f, A::SwitchingStencilArray, args::AbstractArray...)
@@ -68,27 +68,27 @@ function broadcast_stencil!(f, dest, source::AbstractStencilArray, args::Abstrac
 end
 @kernel function broadcast_kerneln0!(f, dest, source)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I))
+    @inbounds dest[I] = f(stencil(source, I))
     nothing
 end
 @kernel function broadcast_kerneln1!(f, dest, source, a1)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I), a1[I])
+    @inbounds dest[I] = f(stencil(source, I), a1[I])
     nothing
 end
 @kernel function broadcast_kerneln2!(f, dest, source, a1, a2)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I), a1[I], a2[I])
+    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I])
     nothing
 end
 @kernel function broadcast_kerneln3!(f, dest, source, a1, a2, a3)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I), a1[I], a2[I], a3[I])
+    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I], a3[I])
     nothing
 end
 @kernel function broadcast_kerneln4!(f, dest, source, a1, a2, a3, a4)
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(neighborhood(source, I), a1[I], a2[I], a3[I], a4[I])
+    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I], a3[I], a4[I])
     nothing
 end
 
@@ -104,10 +104,10 @@ function _checksizes(sources::Tuple)
 end
 
 function applystencil(f, hood, sources::Tuple, I)
-    hoods = map(s -> neighborhood(s, I), sources)
+    hoods = map(s -> stencil(s, I), sources)
     vals = map(s -> s[I], sources)
     f(hoods)
 end
 function applystencil(f, hood, source::AbstractArray, I)
-    f(neighborhood(source, I))
+    f(stencil(source, I))
 end
