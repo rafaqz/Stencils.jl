@@ -47,6 +47,10 @@ function broadcast_stencil!(f, A::SwitchingStencilArray, args::AbstractArray...)
     broadcast_stencil!(f, dest(A), A, args...)
     return switch(A)
 end
+function broadcast_stencil!(f, A::SwitchingStencilArray, B::AbstractStencilArray, args::AbstractArray...)
+    broadcast_stencil!(f, dest(A), A, B, args...)
+    return switch(A)
+end
 function broadcast_stencil!(f, dest, source::AbstractStencilArray, args::AbstractArray...)
     _checksizes((dest, source, args...))
     update_boundary!(source)

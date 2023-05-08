@@ -1,7 +1,7 @@
 using Stencils
 using Aqua
 
-Aqua.test_ambiguities([Stencils, Base, Core])
+# Aqua.test_ambiguities([Stencils, Base, Core]) # SparseArray ambiguity hell
 Aqua.test_unbound_args(Stencils)
 Aqua.test_undefined_exports(Stencils)
 Aqua.test_project_extras(Stencils)

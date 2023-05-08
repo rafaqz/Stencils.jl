@@ -19,14 +19,14 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray) =
     A.stencil
 
 # Base methods
-function Base.copy!(grid::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
+function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
     pad_axes = map(ax -> ax .+ R, axes(A))
-    copyto!(parent(source(grid)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
     return 
 end
-function Base.copy!(A::AbstractArray, grid::AbstractStencilArray{<:Any,R}) where R
+function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
     pad_axes = map(ax -> ax .+ R, axes(A))
-    copyto!(A, CartesianIndices(A), parent(source(grid)), CartesianIndices(pad_axes))
+    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
     return A
 end
 function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArray{<:Any,RS}) where {RD,RS}
@@ -37,8 +37,24 @@ function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArr
     )
     return dst
 end
+function copy!(S::AbstractStencilArray{<:Any,R,T,1} where T, A::AbstractVector) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    return A
+end
+function copy!(A::AbstractVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+    return A
+end
+function copy!(A::SparseArrays.AbstractCompressedVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+    return A
+end
 
 """
+
     neighbors(hood::Stencil, A::AbstractArray, I) => SArrayt
 
 Get a single stencil from an array, as a `Tuple`, checking bounds.

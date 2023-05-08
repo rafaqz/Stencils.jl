@@ -8,6 +8,8 @@ using Adapt,
       StaticArrays,
       UnicodeGraphics
 
+import SparseArrays
+
 export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered
 export StencilArray
 export BoundaryCondition, Wrap, Remove
