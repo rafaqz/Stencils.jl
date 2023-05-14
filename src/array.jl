@@ -7,8 +7,12 @@ a [BoundaryCondition](@ref), and [`Padding`](@ref).
 """
 abstract type AbstractStencilArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
 
-boundary(A::AbstractStencilArray) = A.boundary
-padding(A::AbstractStencilArray) = A.padding
+"""
+    stencil(A::AbstractStencilArray, I::Tuple)
+
+Get a `Stencil` with neighbors updated for indices `I`.
+"""
+function stencil end
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Tuple) =
     update_stencil(A, CartesianIndex(I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianIndex,Int}...) =
@@ -17,6 +21,19 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
     update_stencil(A, I)
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) =
     A.stencil
+
+"""
+    boundary(A::AbstractStencilArray)
+
+Get the [`BoundaryCondition`](@ref) object from an `AbstractStencilArray`.
+"""
+boundary(A::AbstractStencilArray) = A.boundary
+"""
+    padding(A::AbstractStencilArray)
+
+Get the [`Padding`](@ref) object from an `AbstractStencilArray`.
+"""
+padding(A::AbstractStencilArray) = A.padding
 
 # Base methods
 function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
@@ -180,29 +197,6 @@ function Adapt.adapt_structure(to, A::StencilArray{S}) where S
 end
 
 ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray{S}
-
-# Stencil vector
-
-struct LazyStencilVector{L,T,R,N,H,A<:AbstractStencilArray{<:Any,<:Any,T,N,<:Any,H}} <: StaticVector{L,T}
-    parent::A
-    center::CartesianIndex{N}
-    LazyStencilVector(a::A, I::CartesianIndex) where {A<:AbstractStencilArray{S,R,T,N,<:Any,H}} where {S,R,T,N,H<:Stencil{R,N,L}} where {L} =
-        new{L,T,R,N,H,A}(a, I)
-end
-LazyStencilVector(A, I::Tuple) = LazyStencilVector(A, CartesianIndex(I))
-# S,R,T,N,A,H,BC,P
-
-Base.parent(v::LazyStencilVector) = v.parent
-stencil(v::LazyStencilVector) = stencil(parent(v))
-center(v::LazyStencilVector) = v.center
-
-Base.@propagate_inbounds function Base.getindex(v::LazyStencilVector, i::Int)
-    neighbor_getindex(parent(v), indexat(stencil(v), center(v), i))
-end
-
-Base.size(v::LazyStencilVector) = (length(v),)
-Base.length(::LazyStencilVector{Tuple{L}}) where L = L
-
 
 # Internals
 
