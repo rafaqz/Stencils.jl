@@ -62,7 +62,7 @@ getoffset(hood, i::Int) = offsets(hood)[i]
 @generated cartesian_offsets(hood::Stencil) = map(CartesianIndex, offsets(hood))
     
 """
-    indices(x::Union{Stencil,StencilRule}}, I::Tuple) -> iterable
+    indices(x::Stencil, I::Tuple) -> iterable
 
 Returns an indexable iterable of `Tuple` indices of each neighbor in the main array.
 """

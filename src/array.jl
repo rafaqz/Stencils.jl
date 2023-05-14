@@ -3,7 +3,7 @@
     AbstractStencilArray <: StaticArray
 
 Supertype for arrays with a [`Stencil`](@ref),
-a [BoundaryCondition](@ref), and [`Padding`](@ref).
+a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 """
 abstract type AbstractStencilArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
 
@@ -130,7 +130,7 @@ Base.similar(A::AbstractStencilArray, ::Type{T}, I::Tuple{Int,Vararg{Int}}) wher
 """
     StencilArray <: AbstractStencilArray
 
-An array with a [`Stencil`](@ref) and a [BoundaryCondition](@ref), and [`Padding`](@ref).
+An array with a [`Stencil`](@ref) and a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 
 For most uses a `StencilArray` works exactly the same as a regular array.
 
@@ -393,7 +393,7 @@ padval(d::AbstractStencilArray) = padval(boundary(d))
 """
     SwitchingStencilArray <: AbstractSwitchingStencilArray
 
-An `AbstractArray` with a [`Stencil`](@ref), a [BoundaryCondition](@ref), [`Padding`](@ref),
+An `AbstractArray` with a [`Stencil`](@ref), a [`BoundaryCondition`](@ref), [`Padding`](@ref),
 and two array layers that are switched with each `broadcast_stencil` operation.
 
 The use case for this operation is in simulations where stencil operations

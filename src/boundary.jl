@@ -1,9 +1,8 @@
 """
     BoundaryCondition
 
-Abstract supertype for flags that specify the boundary conditions used in the simulation,
-used in [`inbounds`](@ref) and to update [`StencilRule`](@ref) grid padding.
-These determine what happens when a stencil or jump extends outside of the grid.
+Abstract supertype for flags that specify the boundary conditions.
+These determine what happens when a stencil extends outside of the grid.
 """
 abstract type BoundaryCondition end
 
@@ -14,14 +13,6 @@ abstract type BoundaryCondition end
 
 [`BoundaryCondition`](@ref) flag to wrap cordinates that boundary boundaries back to the
 opposite side of the grid.
-
-Specifiy with:
-
-```julia
-ruleset = Ruleset(rule; boundary=Wrap())
-# or
-output = sim!(output, rule; boundary=Wrap())
-```
 """
 struct Wrap <: BoundaryCondition end
 
@@ -31,16 +22,7 @@ struct Wrap <: BoundaryCondition end
     Remove()
 
 [`BoundaryCondition`](@ref) flag that specifies to assign `padval` to cells that overflow 
-grid boundaries. `padval` defaults to `zero(eltype(grid))` but can be assigned as a keyword
-argument to an [`Output`](@ref).
-
-Specifiy with:
-
-```julia
-ruleset = Ruleset(rule; boundary=Remove())
-# or
-output = sim!(output, rule; boundary=Remove())
-```
+grid boundaries.
 """
 struct Remove{PV} <: BoundaryCondition
     padval::PV

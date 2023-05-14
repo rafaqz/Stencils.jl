@@ -6,7 +6,7 @@ makedocs(
     checkdocs = :all,
     strict = true,
     format = Documenter.HTML(
-        prettyurls = CI,
+        prettyurls=get(ENV, "CI", "false") == "true",
     ),
     pages = [
         "Stencils" => "index.md",
