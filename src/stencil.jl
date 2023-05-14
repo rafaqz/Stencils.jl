@@ -14,23 +14,12 @@ ConstructionBase.constructorof(::Type{<:T}) where T <: Stencil{R,N,L} where {R,N
     T.name.wrapper{R,N,L}
 
 """
-    kernelproduct(hood::AbstractKernelStencil)
-    kernelproduct(hood::Stencil, kernel)
-
-Returns the vector dot product of the stencil and the kernel,
-although differing from `dot` in that the dot product is not taken
-iteratively for members of the stencil - they are treated as scalars.
-"""
-function kernelproduct end
-
-"""
     radius(stencil) -> Int
 
 Return the radius of a stencil.
 """
 function radius end
 radius(hood::Stencil{R}) where R = R
-
 
 """
     diameter(rule) -> Int
@@ -52,6 +41,13 @@ function neighbors end
 neighbors(hood::Stencil) = hood._neighbors
 
 """
+    setneighbors(x::Stencil, neighbors::StaticArray)
+
+Update the eighbors of a `Stencil`, returning and identical object with new values.
+"""
+function setneighbors end
+
+"""
     offsets(x) -> iterable
 
 Returns an indexable iterable over all cells in the stencil,
@@ -66,7 +62,7 @@ getoffset(hood, i::Int) = offsets(hood)[i]
 @generated cartesian_offsets(hood::Stencil) = map(CartesianIndex, offsets(hood))
     
 """
-    indices(x::Union{Stencil,StencilRule}}, I::Tuple) -> iterable
+    indices(x::Stencil, I::Tuple) -> iterable
 
 Returns an indexable iterable of `Tuple` indices of each neighbor in the main array.
 """
@@ -100,6 +96,18 @@ List all distance zones as a Tuple
     map(o -> sum(map(abs, o)), offsets(hood))
 end
 
+"""
+    kernelproduct(hood::AbstractKernelStencil)
+    kernelproduct(hood::Stencil, kernel)
+
+Returns the vector dot product of the stencil and the kernel,
+although differing from `dot` in that the dot product is not taken
+iteratively for members of the stencil - they are treated as scalars.
+"""
+function kernelproduct end
+
+
+# Base methods
 Base.eltype(hood::Stencil) = eltype(neighbors(hood))
 Base.length(hood::Stencil) = length(typeof(hood))
 Base.length(::Type{<:Stencil{<:Any,<:Any,L}}) where L = L
@@ -112,6 +120,8 @@ Base.axes(hood::Stencil{R,N}) where {R,N} = ntuple(_ -> SOneTo{2R+1}(), N)
 Base.iterate(hood::Stencil, args...) = iterate(neighbors(hood), args...)
 Base.@propagate_inbounds Base.getindex(hood::Stencil, i) = neighbors(hood)[i]
 Base.keys(hood::Stencil{<:Any,<:Any,L}) where L = StaticArrays.SOneTo(L)
+
+# Show
 function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,N}
     rs = _radii(Val{N}(), R)
     println(typeof(hood))
@@ -126,6 +136,7 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     end
 end
 
+# Get a array of Bool for the offsets that ar used by a Stencil
 function _bool_array(hood::Stencil{R,1}) where {R}
     rs = _radii(hood)
     Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]]

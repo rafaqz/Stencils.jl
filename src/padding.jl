@@ -1,3 +1,9 @@
+"""
+    Padding
+
+Abstract supertype for padding modes, e.g. 
+[`Conditional`](@ref) and [`Halo`](@ref).
+"""
 abstract type Padding end
 
 """
@@ -15,8 +21,8 @@ as there are no boundary effects from using a padding value.:w
 
 # Example
 ```julia
-halo = Halo(:in)
-halo = Halo(:out)
+halo_in = Halo(:in)
+halo_out = Halo(:out)
 ```
 """
 struct Halo{X} <: Padding end

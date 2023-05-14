@@ -1,5 +1,6 @@
-# Neighborhoods
+# Stencils
 
-```@docs
-Neighborhoods
+```@autodocs
+Modules = [Stencils]
+Order = [:module, :type, :function]
 ```
