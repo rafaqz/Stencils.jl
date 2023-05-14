@@ -1,5 +1,5 @@
-# Neighborhoods
+# Stencils
 
 ```@docs
-Neighborhoods
+Stencils
 ```

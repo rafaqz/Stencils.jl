@@ -1,18 +1,18 @@
-using Documenter, Neighborhoods
+using Documenter, Stencils
 
 makedocs(
-    modules = [Neighborhoods],
-    sitename = "Neighborhoods.jl",
+    modules = [Stencils],
+    sitename = "Stencils.jl",
     checkdocs = :all,
     strict = true,
     format = Documenter.HTML(
         prettyurls = CI,
     ),
     pages = [
-        "Neighborhoods" => "index.md",
+        "Stencils" => "index.md",
     ],
 )
 
 deploydocs(
-    repo = "github.com/rafaqz/Neighborhoods.jl.git",
+    repo = "github.com/rafaqz/Stencils.jl.git",
 )
