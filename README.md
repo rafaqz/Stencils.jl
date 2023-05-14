@@ -19,7 +19,7 @@ Stencils.jl will:
 - Run on parallel CPUs and GPUs using KernelAbstractions.jl
 - Use any stencil neighborhood shapes and sizes.
 - Have an easy to use, concise syntax.
-- Allow broadcasting stencil operations.
+- Allow broadcasting stencil operations (not with broadcast syntax tho).
 - Allow using stencil in arbitrary loops both to read and write, 
   such as in spatial cost-distance models.
 - Provide tools for array switching: where two-layered arrays can be used for
