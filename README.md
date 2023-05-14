@@ -25,7 +25,7 @@ Stencils.jl will:
 - Provide tools for array switching: where two-layered arrays can be used for
   multiple steps of a simulations, or applying filters repeatedly using the same memory.
 
-It should Be usfull for image filtering and convolutions, but has no explicit image or color dependencies.
+It should be usefull for image filtering and convolutions, but has no explicit image or color dependencies.
 
 Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, and some coordination
 may be required over 2023.
