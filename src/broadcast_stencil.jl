@@ -56,6 +56,8 @@ function broadcast_stencil!(f, dest, source::AbstractStencilArray, args::Abstrac
     update_boundary!(source)
     device = KernelAbstractions.get_device(parent(source))
     n = device isa GPU ? 64 : 4
+    # This is awful but the KernelAbstractions kernel 
+    # doesn't seem to be type stable without it.
     if length(args) == 0
         kernel! = broadcast_kerneln0!(device, n)
     elseif length(args) == 1
@@ -70,6 +72,8 @@ function broadcast_stencil!(f, dest, source::AbstractStencilArray, args::Abstrac
     kernel!(f, dest, source, args...; ndrange=size(dest)) |> wait
     return dest
 end
+
+# TODO remove these if we can make this type stable with a single method
 @kernel function broadcast_kerneln0!(f, dest, source)
     I = @index(Global, Cartesian)
     @inbounds dest[I] = f(stencil(source, I))
