@@ -17,7 +17,7 @@ and are constucted with generated code for performance.
 Stencils.jl will:
 
 - Run on parallel CPUs and GPUs using KernelAbstractions.jl
-- Use any stencil neighborhood shapes and sizes.
+- Use any stencil neighborhood shapes and sizes (e.g. Moore and Von Neumann, but also ad-hoc custom offsets).
 - Have an easy to use, concise syntax.
 - Allow broadcasting stencil operations (not with broadcast syntax tho).
 - Allow using stencil in arbitrary loops both to read and write, 
