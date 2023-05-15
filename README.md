@@ -14,6 +14,28 @@ Stencils.jl defines only direct kernels, no FFTs. But it's fast at
 broadcasting direct kernels. Stencils are StaticArrays.jl vectors 
 and are constucted with generated code for performance.
 
+Exeample: mean blur, benchmarked on an 8-core thinkpad:
+
+```julia
+using Stencils, Statistics, BenchmarkTools
+r = rand(1000, 1000)
+A = StencilArray(r, Window{1,2}(); padding=Conditional(), boundary=Remove(zero(eltype(r))));
+@benchmark broadcast_stencil(mean, A)
+
+# Output:
+
+BenchmarkTools.Trial: 1058 samples with 1 evaluation.
+ Range (min … max):  2.755 ms … 9.693 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):     5.373 ms             ┊ GC (median):    0.00%
+ Time  (mean ± σ):   4.718 ms ± 1.326 ms  ┊ GC (mean ± σ):  2.92% ± 5.78%
+
+    ▆▂                                   ▁█▅                 
+  ▂▇██▄▁▂▂▁▂▂▄▅▂▂▁▂▁▁▁▂▁▁▁▂▂▁▂▂▂▂▂▂▂▂▂▅▄▂███▆▄▁▁▁▁▂▁▁▂▁▁▂▄▄ ▂
+  2.75 ms        Histogram: frequency by time       6.82 ms <
+
+ Memory estimate: 7.64 MiB, allocs estimate: 110.
+```
+
 Stencils.jl will:
 
 - Run on parallel CPUs and GPUs using KernelAbstractions.jl
