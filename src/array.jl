@@ -467,13 +467,12 @@ end
 # Get S from the parent size
 function SwitchingStencilArray(parent::AbstractArray, hood::Stencil, bc, padding)
     S = Tuple{_size(padding, hood, padded_source)...}
-    SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
+    SwitchingStencilArray{S}(parent, hood, bc, padding)
 end
 # Build the source and dest padded arrays
-function SwitchingStencilArray{S}(parent::AbstractArray, hood::Stencil, bc, padding)
+function SwitchingStencilArray{S}(parent::AbstractArray, hood::Stencil, bc, padding) where S
     padded_source = pad_array(padding, bc, hood, parent)
     padded_dest = pad_array(padding, bc, hood, parent)
-    S = Tuple{_size(padding, hood, padded_source)...}
     SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
 end
 SwitchingStencilArray{S}(source::A, dest::A h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Stencil{R},BC,P} where {R,T,N} =
