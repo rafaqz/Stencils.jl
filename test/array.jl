@@ -18,7 +18,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays
     end
     @testset "2d" begin
         r = rand(100, 100)
-        A = StencilArray(r), VonNeumann{10}(), padding=Conditional(), boundary=Remove(0.0));
+        A = StencilArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100)
