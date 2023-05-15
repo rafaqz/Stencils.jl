@@ -1,20 +1,24 @@
 """
-    Stencil
+    Stencil <: StaticVector
 
 Stencils define a pattern of neighboring cells around the current cell. 
-The [`neighbors`](@ref) function returns the surrounding cells as an iterable.
+They reduce the dimensions of the neighborhood values into a `StaticVector`
+of neighbor values.
 
 Stencils objects are updated to contain the neighbors of a location.
 This is so that user functions can be passed a single object from whitch they 
 can retreive neighbors, distances to neighbors and other information,
 rather than having this in multiple objects.
 
-Stencils are iterators over `neighbors(stencil)`, so additional properties can be ignored.
+Stencils also provide a range of compile-time utility funcitons like
+`distances` and `offsets`.
 """
-abstract type Stencil{R,N,L} end
+abstract type Stencil{R,N,L,T} <: StaticVector{L,T} end
 
 ConstructionBase.constructorof(::Type{<:T}) where T <: Stencil{R,N,L} where {R,N,L} =
     T.name.wrapper{R,N,L}
+
+ndimensions(::Stencil{<:Any,N}) where N = N
 
 """
     radius(stencil) -> Int
@@ -41,7 +45,7 @@ either a `Tuple` of values or a range.
 Custom `Stencil`s must define this method.
 """
 function neighbors end
-neighbors(hood::Stencil) = hood._neighbors
+neighbors(hood::Stencil) = hood.neighbors
 
 """
     setneighbors(x::Stencil, neighbors::StaticArray)
@@ -109,20 +113,15 @@ iteratively for members of the stencil - they are treated as scalars.
 """
 function kernelproduct end
 
-
-# Base methods
-Base.eltype(hood::Stencil) = eltype(neighbors(hood))
-Base.length(hood::Stencil) = length(typeof(hood))
-Base.length(::Type{<:Stencil{<:Any,<:Any,L}}) where L = L
-Base.ndims(hood::Stencil{<:Any,N}) where N = N
-# Note: size may not relate to `length` in the same way
-# as in an array. A stencil does not have to include all cells
-# in the area covered by `size` and `axes`.
-Base.size(hood::Stencil{R,N}) where {R,N} = ntuple(_ -> 2R+1, N)
-Base.axes(hood::Stencil{R,N}) where {R,N} = ntuple(_ -> SOneTo{2R+1}(), N)
-Base.iterate(hood::Stencil, args...) = iterate(neighbors(hood), args...)
-Base.@propagate_inbounds Base.getindex(hood::Stencil, i) = neighbors(hood)[i]
-Base.keys(hood::Stencil{<:Any,<:Any,L}) where L = StaticArrays.SOneTo(L)
+#### Base methods
+@inline Base.Tuple(s::Stencil) = Tuple(neighbors(s))
+function Base.promote_rule(::Type{<:Stencil{R,N,L,T}}, ::Type{<:Stencil{R,N,L,U}}) where {R,N,L,T,U}
+    Stencil{R,N,L,promote_type(T,U)}
+end
+@inline Base.iterate(hood::Stencil, args...) = iterate(neighbors(hood), args...)
+Base.@propagate_inbounds Base.getindex(hood::Stencil{<:Any,<:Any,<:Any,T}, i::Int) where T = 
+    hood.neighbors[i]::T
+Base.parent(hood::Stencil) = neighbors(hood)
 
 # Show
 function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,N}
@@ -132,7 +131,7 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood)) 
         println(io)
-        if !isnothing(neighbors(hood))
+        if !isnothing(first(neighbors(hood)))
             printstyled(io, "with neighbors:\n", color=:light_black)
             show(io, mime, neighbors(hood))
         end
@@ -154,7 +153,9 @@ function _bool_array(hood::Stencil{R,3}) where {R}
     Bool[((i, j, 0) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
 
-# Utils
+
+
+#### Utils
 
 # Copied from StaticArrays. If they can do it...
 Base.@pure function tuple_contents(::Type{X}) where {X<:Tuple}

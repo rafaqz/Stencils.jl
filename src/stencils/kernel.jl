@@ -6,10 +6,10 @@ Abstract supertype for kernel stencils.
 These can wrap any other stencil object, and include a kernel of
 the same length and positions as the stencil.
 """
-abstract type AbstractKernelStencil{R,N,L,H} <: Stencil{R,N,L} end
+abstract type AbstractKernelStencil{R,N,L,T,H} <: Stencil{R,N,L,T} end
 
 neighbors(hood::AbstractKernelStencil) = neighbors(stencil(hood))
-offsets(::Type{<:AbstractKernelStencil{<:Any,<:Any,<:Any,H}}) where H = offsets(H)
+offsets(::Type{<:AbstractKernelStencil{<:Any,<:Any,<:Any,<:Any,H}}) where H = offsets(H)
 positions(hood::AbstractKernelStencil, I::Tuple) = positions(stencil(hood), I)
 
 """
@@ -64,25 +64,25 @@ end
 Wrap any other stencil object, and includes a kernel of
 the same length and positions as the stencil.
 """
-struct Kernel{R,N,L,H,K} <: AbstractKernelStencil{R,N,L,H}
+struct Kernel{R,N,L,T,H,K} <: AbstractKernelStencil{R,N,L,T,H}
     stencil::H
     kernel::K
 end
 Kernel(A::AbstractMatrix) = Kernel(Window(A), A)
-function Kernel(hood::H, kernel::K) where {H<:Stencil{R,N,L},K} where {R,N,L}
+function Kernel(hood::H, kernel::K) where {H<:Stencil{R,N,L,T},K} where {R,N,L,T}
     length(hood) == length(kernel) || _kernel_length_error(hood, kernel)
-    Kernel{R,N,L,H,K}(hood, kernel)
+    Kernel{R,N,L,T,H,K}(hood, kernel)
 end
-function Kernel{R,N,L}(hood::H, kernel::K) where {R,N,L,H<:Stencil{R,N,L},K}
-    Kernel{R,N,L,H,K}(hood, kernel)
+function Kernel{R,N,L,T}(hood::H, kernel::K) where {R,N,L,H<:Stencil{R,N,L,T},K} where T
+    Kernel{R,N,L,T,H,K}(hood, kernel)
 end
 
 function _kernel_length_error(hood, kernel)
     throw(ArgumentError("Stencil length $(length(hood)) does not match kernel length $(length(kernel))"))
 end
 
-function setneighbors(n::Kernel{R,N,L,<:Any,K}, _neighbors) where {R,N,L,K}
-    hood = setneighbors(stencil(n), _neighbors)
-    return Kernel{R,N,L,typeof(hood),K}(hood, kernel(n))
+function setneighbors(n::Kernel{R,N,L,<:Any,<:Any,K}, neighbors) where {R,N,L,K}
+    hood = setneighbors(stencil(n), neighbors)
+    return Kernel{R,N,L,eltype(hood),typeof(hood),K}(hood, kernel(n))
 end
 

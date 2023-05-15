@@ -19,17 +19,17 @@ export stencil, neighbors, offsets, indices, distances, radius, diameter, kernel
 export broadcast_stencil, broadcast_stencil!
 
 include("stencil.jl")
-include("boundary.jl")
-include("padding.jl")
-include("array.jl")
-include("broadcast_stencil.jl")
-
 include("stencils/window.jl")
 include("stencils/moore.jl")
 include("stencils/vonneumman.jl")
 include("stencils/positional.jl")
 include("stencils/layered.jl")
 include("stencils/kernel.jl")
+
+include("boundary.jl")
+include("padding.jl")
+include("array.jl")
+include("broadcast_stencil.jl")
 
 end # Module Stencils
 

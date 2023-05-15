@@ -26,14 +26,19 @@ N = 1   N = 2
         ▀▀▀▀▀
 ```
 """
-struct Window{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Stencil{R,N,L}
-    _neighbors::T
+struct Window{R,N,L,T} <: Stencil{R,N,L,T}
+    neighbors::StaticVector{L,T}
+    Window{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
 end
-Window(; radius=1, ndims=2) = Window{radius,ndims}(args...)
-Window(R::Int, args...; ndims=2) = Window{R,ndims}(args...)
-Window{R}(_neighbors=nothing; ndims=2) where {R} = Window{R,ndims}(_neighbors)
-Window{R,N}(_neighbors=nothing) where {R,N} = Window{R,N,(2R+1)^N}(_neighbors)
-Window{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Window{R,N,L,T}(_neighbors)
+Window{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = Window{R,N,L,T}(neighbors)
+Window{R,N,L}() where {R,N,L} = Window{R,N,L}(SVector(ntuple(_ -> nothing, L)))
+function Window{R,N}(args::StaticVector...) where {R,N} 
+    L = (2R + 1)^N
+    Window{R,N,L}(args...)
+end
+Window{R}(args::StaticVector...) where {R} = Window{R,2}(args...)
+Window(args...; radius=1, ndims=2) = Window{radius,ndims}(args...)
+Window(radius::Int, ndims::Int=2) = Window{radius,ndims}()
 Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
 
 # The central cell is included
@@ -43,5 +48,4 @@ Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
     return :(SVector($vals))
 end
 
-@inline setneighbors(::Window{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
-    Window{R,N,L,T2}(_neighbors)
+@inline setneighbors(::Window{R,N,L}, neighbors) where {R,N,L} = Window{R,N,L}(neighbors)

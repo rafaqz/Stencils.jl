@@ -100,8 +100,8 @@ $RADIUSDOC
 
 `padval` defaults to `zero(eltype(A))`.
 """
-pad_array(::Conditional, ::BoundaryCondition, hood::Stencil, parent::AbstractArray) = parent
-function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Stencil, parent::AbstractArray{T}) where T
+pad_array(::Conditional, ::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray) = parent
+function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray{T}) where T
     rs = _radii(parent, hood)
     padded_axes = outer_axes(parent, rs)
     padded_parent = similar(parent, T, length.(padded_axes))
@@ -109,6 +109,6 @@ function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::Stencil, parent::A
     padded_offset = OffsetArray(padded_parent, padded_axes)
     return padded_offset
 end
-function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::Stencil, parent::AbstractArray)
+function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray)
     return OffsetArray(parent, offset_axes(parent, hood))
 end

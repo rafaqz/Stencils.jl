@@ -19,14 +19,8 @@ function broadcast_stencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, arg
     dest = similar(parent(source), T_return, size(source))
     broadcast_stencil!(f, dest, source, args...)
 end
-broadcast_stencil(f, hood::Stencil, A::AbstractArray, args::AbstractArray...; kw...) =
+broadcast_stencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...) =
     broadcast_stencil(f, StencilArray(A, hood; kw...), args...)
-
-_emptyhood(x) = _emptyhood(x, stencil(x))
-function _emptyhood(x::AbstractArray{T}, hood::Stencil{<:Any,<:Any,L}) where {T,L} 
-    z = zero(T)
-    return SVector(ntuple(_ -> z, Val{L}()))
-end
 
 kernel_setup() = KernelAbstractions.CPU(), 1
 
