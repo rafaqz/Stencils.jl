@@ -20,8 +20,7 @@ Exeample: mean blur, benchmarked on an 8-core thinkpad:
 using Stencils, Statistics, BenchmarkTools
 r = rand(1000, 1000)
 A = StencilArray(r, Window{1,2}())
-@benchmark broadcast_stencil(x -> mean(neighbors(x)), A)
-
+@benchmark broadcast_stencil(mean, A)
 
 # Output:
 
