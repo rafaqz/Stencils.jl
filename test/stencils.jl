@@ -1,4 +1,5 @@
 using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, BenchmarkTools
+using Stencils: setneighbors
 
 init = [0 0 0 1 1 1
         1 0 1 1 0 1
@@ -7,18 +8,12 @@ init = [0 0 0 1 1 1
         0 0 0 0 1 1
         0 1 0 1 1 0]
 
-win1 = [0 0 0
-        0 1 0
-        0 0 0]
-win2 = [1 1 1
-        1 0 1
-        1 1 1]
-win3 = [1 1 1
-        0 0 1
-        0 0 1]
+win1 = SA[0, 0, 0, 0, 1, 0, 0, 0, 0]
+win2 = SA[1, 1, 1, 1, 0, 1, 1, 1, 1]
+win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 
 @testset "Moore" begin
-    moore = Moore{1}(SVector(0,1,0,0,1,0,1,1))
+    moore = Moore{1,2}(SVector(0,1,0,0,1,0,1,1))
 
     # Stencils.distance_zones(moore)
     @test radius(moore) == 1
@@ -38,7 +33,7 @@ win3 = [1 1 1
 end
 
 @testset "Window" begin
-    @test Window{1}() == Window(1) == Window(zeros(3, 3))
+    @test Window{1}() == Window{1,2}() == Window(zeros(3, 3))
     window = Window{1}(SVector(init[1:3, 1:3]...))
     @test diameter(window) == 3
     @test window[1] == 0
@@ -83,25 +78,26 @@ end
            0 0 0 1 1
            0 0 1 0 1
            1 0 1 0 1]
-    h1 = Positional(((-1,-1), (2,-2), (2,2), (-1,2), (0, 0)))
-    custom1 = stencil(StencilArray(win, h1), (3, 3)) 
-    h2 = Positional{((-1,-1), (0,-1), (1,-1), (2,-1), (0,0))}()
-    custom2 = stencil(StencilArray(win, h2), (3, 3)) 
-    l = Layered((Positional((-1,1), (-2,2)), Positional((1,2), (2,2), (0, 2))))
-    layered = stencil(StencilArray(win, l), (3, 3)) 
+    h1 = Positional(((-1, -1), (2, -2), (2, 2), (-1, 2), (0, 0)))
+    @test radius(h1) == 2
+    @test length(h1) == 5
+    res1 = stencil(StencilArray(win, h1), (3, 3)) 
+    @test neighbors(res1) == SVector(0, 1, 1, 0, 0)
+    @test sum(res1) == 2
 
-    @test neighbors(custom1) == SVector(0, 1, 1, 0, 0)
-    @test sum(custom1) == 2
-    @test sum(custom2) == 0
-    @test map(sum, layered) == (1, 3)
-    @test offsets(layered) == (SVector((-1, 1), (-2, 2)), SVector((1, 2), (2, 2), (0, 2)))
+    h2 = Positional{((-1,-1), (0,-1), (1,-1), (0,0))}()
+    @test radius(h2) == 1
+    @test length(h2) == 4
+    res2 = stencil(StencilArray(win, h2), (3, 3)) 
+    @test neighbors(res2) == SVector(0, 0, 0, 0)
+    @test sum(res2) == 0
 end
 
 @testset "Layered" begin
     lhood = Layered(
         Positional(((-1, -1), (1, 1)), ), Positional(((-2, -2), (2, 2)), )
     )
-    @test radius(lhood) == ((-2, 2), (-2, 2))
+    @test radius(lhood) == 2
     @test offsets(lhood) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
     @test indices(lhood, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
     lhood1 = stencil(StencilArray(reshape(1:25, 5, 5), lhood), (3, 3))
@@ -109,14 +105,13 @@ end
 end
 
 @testset "Kernel" begin
-    win = reshape(1:9, 3, 3)
     @testset "Window" begin
-        mat = zeros(3, 3)
-        @test Kernel(mat) == Kernel(Window(1), mat)
-        @test_throws ArgumentError Kernel(Window(2), mat)
-        k = Kernel(Window{1,2,9,typeof(win)}(win), SMatrix{3,3}(reshape(1:9, 3, 3)))
+        kern = SVector{9}(1:9)
+        Kernel(Window{1}(), kern)
+        @test_throws ArgumentError Kernel(Window{2}(), kern)
+        k = Kernel(Window{1,2}(kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
         @test kernelproduct(k) == sum((1:9).^2)
-        @test neighbors(k) == reshape(1:9, 3, 3)
+        @test neighbors(k) == SVector{9}(1:9)
         @test offsets(k) === SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
                               (1, 0), (-1, 1), (0, 1), (1, 1))
         @test indices(k, (2, 2)) === SVector((1, 1), (2, 1), (3, 1), (1, 2),
@@ -127,6 +122,7 @@ end
         @test kernelproduct(k) === sum((1:4).^2) + sum((6:9).^2)
     end
     @testset "Positional" begin
+        win = reshape(1:9, 3, 3)
         off = ((0,-1),(-1,0),(1,0),(0,1))
         hood = Positional{off,1,2,4,}()
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))

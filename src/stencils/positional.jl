@@ -5,7 +5,7 @@ Positional stencils are tuples of coordinates that are specified in relation
 to the central point of the current cell. They can be any arbitrary shape or size,
 but should be listed in column-major order for performance.
 """
-abstract type AbstractPositionalStencil{R,N,L} <: Stencil{R,N,L} end
+abstract type AbstractPositionalStencil{R,N,L,T} <: Stencil{R,N,L,T} end
 
 const CustomOffset = Tuple{Int,Vararg{Int}}
 const CustomOffsets = Union{Tuple{<:CustomOffset,Vararg{<:CustomOffset}}}
@@ -51,22 +51,22 @@ N = 1   N = 2
 Using the `O` parameter e.g. `Positional{((1, 2), (1, 1))}()` removes any
 runtime cost of generating the stencil.
 """
-struct Positional{O,R,N,L,T<:Union{Nothing,<:AbstractArray}} <: AbstractPositionalStencil{R,N,L}
-    _neighbors::T
+struct Positional{O,R,N,L,T} <: AbstractPositionalStencil{R,N,L,T}
+    neighbors::StaticVector{L,T}
+    Positional{O,R,N,L,T}(neighbors::StaticVector{L,T}) where {O,R,N,L,T} = new{O,R,N,L,T}(neighbors)
 end
-Positional(co::CustomOffset, args::CustomOffset...) = Positional((co, args...))
-function Positional(offsets::CustomOffsets, _neighbors::Union{Nothing,AbstractVector}=nothing)
-    Positional{offsets}(_neighbors)
-end
-function Positional{O}(_neighbors::Union{Nothing,AbstractVector}=nothing) where O
+Positional{O,R,N,L}(neighbors::StaticVector{L,T}) where {O,R,N,L,T} = 
+    Positional{O,R,N,L,T}(neighbors)
+Positional{O,R,N,L}() where {O,R,N,L} = 
+    Positional{O,R,N,L}(SVector(ntuple(_ -> nothing, L)))
+function Positional{O}(args::StaticVector...) where O
     N = length(first(O))
     R = _positional_radii(N, O)
     L = length(O)
-    Positional{O,R,N,L}(_neighbors)
+    Positional{O,R,N,L}(args...)
 end
-function Positional{O,R,N,L}(_neighbors::T=nothing) where {O,R,N,L,T<:Union{Nothing,AbstractVector}}
-    Positional{O,R,N,L,T}(_neighbors)
-end
+Positional(co::CustomOffset, args::CustomOffset...) = Positional((co, args...))
+Positional(offsets::CustomOffsets) = Positional{offsets}()
 
 function ConstructionBase.constructorof(::Type{Positional{O,R,N,L,T}}) where {O,R,N,L,T}
     Positional{O,R,N,L}
@@ -74,13 +74,16 @@ end
 
 offsets(::Type{<:Positional{O}}) where O = SVector(O)
 
-@inline function setneighbors(n::Positional{O,R,N,L}, _neighbors::T2) where {O,R,N,L,T2<:StaticVector{L}}
-    Positional{O,R,N,L,T2}(_neighbors)
+@inline function setneighbors(n::Positional{O,R,N,L}, neighbors) where {O,R,N,L}
+    Positional{O,R,N,L}(neighbors)
 end
 
 # Calculate the maximum absolute value in the offsets to use as the radius
+# function _positional_radii(ndims, offsets::Union{AbstractArray,Tuple})
+#     ntuple(ndims) do i
+#         extrema(o[i] for o in offsets)
+#     end
+# end
 function _positional_radii(ndims, offsets::Union{AbstractArray,Tuple})
-    ntuple(ndims) do i
-        extrema(o[i] for o in offsets)
-    end
+    maximum(map(maximum, offsets))
 end

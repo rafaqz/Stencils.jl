@@ -31,16 +31,21 @@ N = 1   N = 2
 Using `R` and `N` type parameters removes runtime cost of generating the stencil,
 compated to passing arguments/keywords.
 """
-struct Moore{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Stencil{R,N,L}
-    _neighbors::T
+struct Moore{R,N,L,T} <: Stencil{R,N,L,T}
+    neighbors::StaticVector{L,T}
+    Moore{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
 end
-Moore(radius::Int=1; ndims=2) = Moore{radius,ndims}()
-Moore(args...; radius=1, ndims=2) = Moore{radius,ndims}(args...)
-Moore{R}(_neighbors=nothing; ndims=2) where R = Moore{R,ndims,}(_neighbors)
-Moore{R,N}(_neighbors=nothing) where {R,N} = Moore{R,N,(2R+1)^N-1}(_neighbors)
-Moore{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = Moore{R,N,L,T}(_neighbors)
+Moore{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = Moore{R,N,L,T}(neighbors)
+Moore{R,N,L}() where {R,N,L} = Moore{R,N,L}(SVector(ntuple(_ -> nothing, L)))
+function Moore{R,N}(args::StaticVector...) where {R,N}
+    L = (2R + 1)^N - 1
+    Moore{R,N,L}(args...)
+end
+Moore{R}(args::StaticVector...) where R = Moore{R,2}(args...)
+Moore(args::StaticVector...; radius=1, ndims=2) = Moore{radius,ndims}(args...)
+Moore(radius::Int, ndims::Int=2) = Moore{radius,ndims}()
 
-offsets(T::Type{<:Moore}) = SVector(_offsets(T))
+@inline offsets(T::Type{<:Moore}) = SVector(_offsets(T))
 @generated function _offsets(::Type{<:Moore{R,N,L}}) where {R,N,L}
     exp = Expr(:tuple)
     # First half
@@ -54,5 +59,4 @@ offsets(T::Type{<:Moore}) = SVector(_offsets(T))
     end
     return exp
 end
-@inline setneighbors(n::Moore{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
-    Moore{R,N,L,T2}(_neighbors)
+@inline setneighbors(n::Moore{R,N,L}, neighbors) where {R,N,L} = Moore{R,N,L}(neighbors)

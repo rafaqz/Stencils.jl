@@ -29,20 +29,22 @@ In 1 dimension it is identical to [`Moore`](@ref).
 Using `R` and `N` type parameters removes runtime cost of generating the stencil,
 compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,T<:Union{Nothing,<:AbstractArray}} <: Stencil{R,N,L}
-    _neighbors::T
+struct VonNeumann{R,N,L,T} <: Stencil{R,N,L,T}
+    neighbors::StaticVector{L,T}
+    VonNeumann{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
 end
-VonNeumann(; radius=1, ndims=2) = VonNeumann(radius; ndims)
-VonNeumann(radius, _neighbors=nothing; ndims=2) = VonNeumann{radius,ndims}(_neighbors)
-VonNeumann{R}(_neighbors=nothing; ndims=2) where R = VonNeumann{R,ndims}(_neighbors)
-function VonNeumann{R,N}(_neighbors=nothing) where {R,N}
+VonNeumann{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = VonNeumann{R,N,L,T}(neighbors)
+VonNeumann{R,N,L}() where {R,N,L} = VonNeumann{R,N,L}(SVector(ntuple(_ -> nothing, L))) 
+function VonNeumann{R,N}(args::StaticVector...) where {R,N}
     L = delannoy(N, R) - 1
-    VonNeumann{R,N,L}(_neighbors)
+    VonNeumann{R,N,L}(args...)
 end
-VonNeumann{R,N,L}(_neighbors::T=nothing) where {R,N,L,T} = VonNeumann{R,N,L,T}(_neighbors)
+VonNeumann{R}(args::StaticVector...) where R = VonNeumann{R,2}(args...)
+VonNeumann(args::StaticVector...; radius=1, ndims=2) = VonNeumann{radius,ndims}(args...)
+VonNeumann(radius::Int, ndims::Int=2) = VonNeumann{radius,ndims}()
 
-@inline setneighbors(n::VonNeumann{R,N,L}, _neighbors::T2) where {R,N,L,T2<:StaticVector{L}} =
-    VonNeumann{R,N,L,T2}(_neighbors)
+@inline setneighbors(n::VonNeumann{R,N,L}, neighbors) where {R,N,L} =
+    VonNeumann{R,N,L}(neighbors)
 
 offsets(T::Type{<:VonNeumann}) = SVector(_offsets(T))
 @generated function _offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}
