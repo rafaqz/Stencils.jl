@@ -4,9 +4,12 @@
 Stencils define a pattern of neighboring cells around the current cell. 
 The [`neighbors`](@ref) function returns the surrounding cells as an iterable.
 
-The main kinds of stencil are demonstrated below:
+Stencils objects are updated to contain the neighbors of a location.
+This is so that user functions can be passed a single object from whitch they 
+can retreive neighbors, distances to neighbors and other information,
+rather than having this in multiple objects.
 
-![Stencils](https://raw.githubusercontent.com/cesaraustralia/DynamicGrids.jl/media/Neighborhoods.png)
+Stencils are iterators over `neighbors(stencil)`, so additional properties can be ignored.
 """
 abstract type Stencil{R,N,L} end
 
