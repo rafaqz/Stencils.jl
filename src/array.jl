@@ -43,7 +43,7 @@ Get a single stencil from an array, as a `Tuple`, checking bounds.
 @inline neighbors(A::AbstractStencilArray, I::NTuple{<:Any,Int}) = neighbors(A, I...)
 @inline neighbors(A::AbstractStencilArray, I::Int...) = neighbors(A, CartesianIndex(I))
 @inline function neighbors(A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
-    if padding(A) isa Halo || (padding(A) isa Conditional && bounds(A) isa Wrap)  # Conditional Remove has checks internally
+    if padding(A) isa Halo || (padding(A) isa Conditional && boundary(A) isa Wrap)  # Conditional Remove has checks internally
         low = CartesianIndex(ntuple(_ -> -R, N))
         high = CartesianIndex(ntuple(_ -> R, N))
         checkbounds(parent(A), I + low)
@@ -475,7 +475,7 @@ function SwitchingStencilArray{S}(parent::AbstractArray, hood::Stencil, bc, padd
     padded_dest = pad_array(padding, bc, hood, parent)
     SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
 end
-SwitchingStencilArray{S}(source::A, dest::A h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Stencil{R},BC,P} where {R,T,N} =
+SwitchingStencilArray{S}(source::A, dest::A, h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Stencil{R},BC,P} where {R,T,N} =
     SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
 
 switch(A::SwitchingStencilArray) =
