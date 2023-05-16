@@ -36,7 +36,7 @@ BenchmarkTools.Trial: 1058 samples with 1 evaluation.
 
 And on the Thinkpads tiny onboard Nvidia GeForce MX330:
 
-```
+```julia
 using CUDA, CUDAKernels
 r = CuArray(rand(1000, 1000))
 A = StencilArray(r, Window(1))
