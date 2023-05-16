@@ -1,6 +1,4 @@
-_von_neumann_length(R, N) = delannoy(N, R) - 1
-
-@stencil VonNeumann _von_neumann_length """
+@stencil VonNeumann """
 Diamond-shaped neighborhood (in 2 dimwnsions), without the central cell
 In 1 dimension it is identical to [`Moore`](@ref).
 """

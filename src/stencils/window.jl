@@ -1,6 +1,4 @@
-_window_length(R, N) = (2R + 1)^N
-
-@stencil Window _window_length "A neighboorhood of radius R that includes the central cell."
+@stencil Window "A neighboorhood of radius R that includes the central cell."
 
 Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
 

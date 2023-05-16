@@ -180,7 +180,7 @@ _radii(::Stencil{R,N}) where {R,N} = _radii(Val{N}(), R)
 _radii(A::AbstractArray{<:Any,N}, r) where N = _radii(Val{N}(), r)
 
 
-macro stencil(name, lengthfunc, description)
+macro stencil(name, description)
     docstring = """
 
         $name <: Stencil
@@ -208,7 +208,8 @@ macro stencil(name, lengthfunc, description)
         $name{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(neighbors)
         $name{R,N,L}() where {R,N,L} = $name{R,N,L}(SVector(ntuple(_ -> nothing, L)))
         function $name{R,N}(args::StaticVector...) where {R,N}
-            $name{R,N,$lengthfunc(R, N)}(args...)
+            L = length(offsets($name{R,N}))
+            $name{R,N,L}(args...)
         end
         $name{R}(args::StaticVector...) where R = $name{R,2}(args...)
         $name(args::StaticVector...; radius=1, ndims=2) = $name{radius,ndims}(args...)
