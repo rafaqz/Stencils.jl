@@ -52,14 +52,14 @@ Using the `O` parameter e.g. `Positional{((1, 2), (1, 1))}()` removes any
 runtime cost of generating the stencil.
 """
 struct Positional{O,R,N,L,T} <: AbstractPositionalStencil{R,N,L,T}
-    neighbors::StaticVector{L,T}
-    Positional{O,R,N,L,T}(neighbors::StaticVector{L,T}) where {O,R,N,L,T} = new{O,R,N,L,T}(neighbors)
+    neighbors::SVector{L,T}
+    Positional{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} = new{O,R,N,L,T}(neighbors)
 end
-Positional{O,R,N,L}(neighbors::StaticVector{L,T}) where {O,R,N,L,T} = 
+Positional{O,R,N,L}(neighbors::SVector{L,T}) where {O,R,N,L,T} = 
     Positional{O,R,N,L,T}(neighbors)
 Positional{O,R,N,L}() where {O,R,N,L} = 
     Positional{O,R,N,L}(SVector(ntuple(_ -> nothing, L)))
-function Positional{O}(args::StaticVector...) where O
+function Positional{O}(args::SVector...) where O
     N = length(first(O))
     R = _positional_radii(N, O)
     L = length(O)

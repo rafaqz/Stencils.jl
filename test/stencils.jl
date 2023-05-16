@@ -14,6 +14,7 @@ win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 
 @testset "Moore" begin
     moore = Moore{1,2}(SVector(0,1,0,0,1,0,1,1))
+    @test isbits(moore)
 
     # Stencils.distance_zones(moore)
     @test radius(moore) == 1
@@ -35,6 +36,7 @@ end
 @testset "Window" begin
     @test Window{1}() == Window{1,2}() == Window(zeros(3, 3))
     window = Window{1}(SVector(init[1:3, 1:3]...))
+    @test isbits(window)
     @test diameter(window) == 3
     @test window[1] == 0
     @test window[2] == 1
@@ -79,6 +81,7 @@ end
            0 0 1 0 1
            1 0 1 0 1]
     h1 = Positional(((-1, -1), (2, -2), (2, 2), (-1, 2), (0, 0)))
+    @test isbits(h1)
     @test radius(h1) == 2
     @test length(h1) == 5
     res1 = stencil(StencilArray(win, h1), (3, 3)) 
@@ -97,6 +100,7 @@ end
     lhood = Layered(
         Positional(((-1, -1), (1, 1)), ), Positional(((-2, -2), (2, 2)), )
     )
+    @test isbits(lhood)
     @test radius(lhood) == 2
     @test offsets(lhood) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
     @test indices(lhood, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
