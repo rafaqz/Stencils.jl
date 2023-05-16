@@ -10,7 +10,8 @@ using Adapt,
 
 import SparseArrays
 
-export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered
+export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered, 
+    Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal
 export StencilArray
 export BoundaryCondition, Wrap, Remove
 export Padding, Conditional, Halo
@@ -22,6 +23,7 @@ include("stencil.jl")
 include("stencils/window.jl")
 include("stencils/moore.jl")
 include("stencils/vonneumman.jl")
+include("stencils/shapes.jl")
 include("stencils/positional.jl")
 include("stencils/layered.jl")
 include("stencils/kernel.jl")
