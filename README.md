@@ -22,8 +22,6 @@ r = rand(1000, 1000)
 A = StencilArray(r, Window(1))
 @benchmark broadcast_stencil(mean, A)
 
-# Output:
-
 BenchmarkTools.Trial: 1058 samples with 1 evaluation.
  Range (min … max):  2.755 ms … 9.693 ms  ┊ GC (min … max): 0.00% … 0.00%
  Time  (median):     5.373 ms             ┊ GC (median):    0.00%
@@ -34,6 +32,26 @@ BenchmarkTools.Trial: 1058 samples with 1 evaluation.
   2.75 ms        Histogram: frequency by time       6.82 ms <
 
  Memory estimate: 7.64 MiB, allocs estimate: 110.
+```
+
+And on the Thinkpads tiny onboard Nvidia GeForce MX330:
+
+```
+using CUDA, CUDAKernels
+r = CuArray(rand(1000, 1000))
+A = StencilArray(r, Window(1))
+@benchmark broadcast_stencil(mean, A)
+
+BenchmarkTools.Trial: 3256 samples with 1 evaluation.
+ Range (min … max):  916.833 μs …  10.147 ms  ┊ GC (min … max): 0.00% … 0.00%
+ Time  (median):       1.414 ms               ┊ GC (median):    0.00%
+ Time  (mean ± σ):     1.521 ms ± 553.722 μs  ┊ GC (mean ± σ):  0.51% ± 2.45%
+
+      ▂█▂                                                        
+  ▂▃▄▆██████████▇▆▆▅▄▃▃▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▂▁▂▂▂▂▂▁▁▂▂▂▂▂ ▃
+  917 μs           Histogram: frequency by time         4.11 ms <
+
+ Memory estimate: 4.06 KiB, allocs estimate: 74.
 ```
 
 Stencils.jl will:
