@@ -1,53 +1,8 @@
-"""
-    VonNeumann(1; ndims=2)
-    VonNeumann(; radius=1, ndims=2)
-    VonNeumann{R,N}()
-
-A 2 dimensionsl Von Neumann stencil is a damond-shaped, omitting the central cell:
-
-Radius `R = 1`:
-
-```
-N = 1   N = 2
-
- ▄ ▄     ▄▀▄
-          ▀
-```
-
-Radius `R = 2`:
-
-```
-N = 1   N = 2
-
-         ▄█▄
-▀▀ ▀▀   ▀█▄█▀
-          ▀
-```
-
+@stencil VonNeumann """
+Diamond-shaped neighborhood (in 2 dimwnsions), without the central cell
 In 1 dimension it is identical to [`Moore`](@ref).
-
-Using `R` and `N` type parameters removes runtime cost of generating the stencil,
-compated to passing arguments/keywords.
 """
-struct VonNeumann{R,N,L,T} <: Stencil{R,N,L,T}
-    neighbors::SVector{L,T}
-    VonNeumann{R,N,L,T}(neighbors::SVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
-end
-VonNeumann{R,N,L}(neighbors::SVector{L,T}) where {R,N,L,T} = VonNeumann{R,N,L,T}(neighbors)
-VonNeumann{R,N,L}() where {R,N,L} = VonNeumann{R,N,L}(SVector(ntuple(_ -> nothing, L))) 
-function VonNeumann{R,N}(args::SVector...) where {R,N}
-    L = delannoy(N, R) - 1
-    VonNeumann{R,N,L}(args...)
-end
-VonNeumann{R}(args::SVector...) where R = VonNeumann{R,2}(args...)
-VonNeumann(args::SVector...; radius=1, ndims=2) = VonNeumann{radius,ndims}(args...)
-VonNeumann(radius::Int, ndims::Int=2) = VonNeumann{radius,ndims}()
-
-@inline setneighbors(n::VonNeumann{R,N,L}, neighbors) where {R,N,L} =
-    VonNeumann{R,N,L}(neighbors)
-
-offsets(T::Type{<:VonNeumann}) = SVector(_offsets(T))
-@generated function _offsets(::Type{H}) where {H<:VonNeumann{R,N}} where {R,N}
+@generated function offsets(::Type{<:VonNeumann{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     rngs = ntuple(_ -> -R:R, N)
     for I in CartesianIndices(rngs)
@@ -56,7 +11,7 @@ offsets(T::Type{<:VonNeumann}) = SVector(_offsets(T))
             push!(offsets_expr.args, Tuple(I))
         end
     end
-    return offsets_expr
+    return :(SVector($offsets_expr))
 end
 
 # Utils

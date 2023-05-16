@@ -1,12 +1,12 @@
 """
     Stencil <: StaticVector
 
-Stencils define a pattern of neighboring cells around the current cell. 
+Stencils define a pattern of neighboring cells around the current cell.
 They reduce the dimensions of the neighborhood values into a `StaticVector`
 of neighbor values.
 
 Stencils objects are updated to contain the neighbors of a location.
-This is so that user functions can be passed a single object from whitch they 
+This is so that user functions can be passed a single object from whitch they
 can retreive neighbors, distances to neighbors and other information,
 rather than having this in multiple objects.
 
@@ -67,7 +67,7 @@ offsets(hood::Stencil) = offsets(typeof(hood))
 getoffset(hood, i::Int) = offsets(hood)[i]
 
 @generated cartesian_offsets(hood::Stencil) = map(CartesianIndex, offsets(hood))
-    
+
 """
     indices(x::Stencil, I::Tuple) -> iterable
 
@@ -76,7 +76,7 @@ Returns an indexable iterable of `Tuple` indices of each neighbor in the main ar
 function indices end
 @inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
 @inline indices(hood::Stencil, I::Int...) = indices(hood, I)
-@inline indices(hood::Stencil, I) = map(O -> map(+, O, I), offsets(hood)) 
+@inline indices(hood::Stencil, I) = map(O -> map(+, O, I), offsets(hood))
 Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offsets(hood)[i]) + center
 
 """
@@ -119,7 +119,7 @@ function Base.promote_rule(::Type{<:Stencil{R,N,L,T}}, ::Type{<:Stencil{R,N,L,U}
     Stencil{R,N,L,promote_type(T,U)}
 end
 @inline Base.iterate(hood::Stencil, args...) = iterate(neighbors(hood), args...)
-Base.@propagate_inbounds Base.getindex(hood::Stencil{<:Any,<:Any,<:Any,T}, i::Int) where T = 
+Base.@propagate_inbounds Base.getindex(hood::Stencil{<:Any,<:Any,<:Any,T}, i::Int) where T =
     hood.neighbors[i]::T
 Base.parent(hood::Stencil) = neighbors(hood)
 
@@ -129,7 +129,7 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     println(typeof(hood))
     bools = _bool_array(hood)
     print(io, UnicodeGraphics.blockize(bools))
-    if !isnothing(neighbors(hood)) 
+    if !isnothing(neighbors(hood))
         println(io)
         if !isnothing(first(neighbors(hood)))
             printstyled(io, "with neighbors:\n", color=:light_black)
@@ -147,10 +147,10 @@ function _bool_array(hood::Stencil{R,2}) where {R}
     rs = _radii(hood)
     Bool[((i, j) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
-function _bool_array(hood::Stencil{R,3}) where {R}
+function _bool_array(hood::Stencil{R,N}) where {R,N} 
     rs = _radii(hood)
     # Just show the center slice
-    Bool[((i, j, 0) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
+    Bool[((i, j, ntuple(_ -> 0, N-2)...) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
 
 
@@ -171,10 +171,51 @@ tuple_contents(xs::Tuple) = xs
 _radii(::Val{N}, r::NTuple{N,<:Tuple{<:Integer,<:Integer}}) where N = r
 _radii(::Val{0}, r::Tuple{}) = ()
 # NTuple of Integers, map so both sides are the same
-_radii(::Val{N}, rs::NTuple{N,Integer}) where N = map(r -> (r, r), rs) 
+_radii(::Val{N}, rs::NTuple{N,Integer}) where N = map(r -> (r, r), rs)
 # Integer, make an Ntuple{N,NTuple{2,Integer}}
 _radii(::Val{N}, r::Integer) where N = ntuple(_ -> (r, r), N)
 _radii(ndims::Val, ::Stencil{R}) where R = _radii(ndims, R)
 # Convert array/stencil to `Val{N}` for ndims
 _radii(::Stencil{R,N}) where {R,N} = _radii(Val{N}(), R)
 _radii(A::AbstractArray{<:Any,N}, r) where N = _radii(Val{N}(), r)
+
+
+macro stencil(name, description)
+    docstring = """
+
+        $name <: Stencil
+
+        $name(; radius=1, ndims=2)
+        $name(radius, ndims)
+        $name{R,N}()
+        $name{R,N}()
+
+    $description
+
+    Using `R` and `N` type parameters removes runtime cost of generating the stencil,
+    compated to passing arguments/keywords.
+    """
+
+    name = esc(name)
+
+    struct_expr = quote
+        struct $name{R,N,L,T} <: Stencil{R,N,L,T}
+            neighbors::SVector{L,T}
+            $name{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
+        end
+    end
+    func_exprs = quote
+        $name{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(neighbors)
+        $name{R,N,L}() where {R,N,L} = $name{R,N,L}(SVector(ntuple(_ -> nothing, L)))
+        function $name{R,N}(args::StaticVector...) where {R,N}
+            L = length(offsets($name{R,N}))
+            $name{R,N,L}(args...)
+        end
+        $name{R}(args::StaticVector...) where R = $name{R,2}(args...)
+        $name(args::StaticVector...; radius=1, ndims=2) = $name{radius,ndims}(args...)
+        $name(radius::Int, ndims::Int=2) = $name{radius,ndims}()
+
+        @inline Stencils.setneighbors(n::$name{R,N,L}, neighbors) where {R,N,L} = $name{R,N,L}(neighbors)
+    end
+    return Expr(:block, :(Base.@doc $docstring $struct_expr), func_exprs)
+end
