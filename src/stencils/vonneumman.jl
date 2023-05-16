@@ -13,7 +13,7 @@ In 1 dimension it is identical to [`Moore`](@ref).
             push!(offsets_expr.args, Tuple(I))
         end
     end
-    return offsets_expr
+    return :(SVector($offsets_expr))
 end
 
 # Utils

@@ -6,15 +6,15 @@ vertical distance of the central cell. The central cell is omitted.
 """
 
 @generated function offsets(::Type{<:Moore{R,N,L}}) where {R,N,L}
-    exp = Expr(:tuple)
+    offsets_expr = Expr(:tuple)
     # First half
     for I in CartesianIndices(ntuple(_-> -R:R, N))[1:L÷2]
-        push!(exp.args, :($(Tuple(I))))
+        push!(offsets_expr.args, :($(Tuple(I))))
     end
     # Skip the middle position
     # Second half
     for I in CartesianIndices(ntuple(_-> -R:R, N))[L÷2+2:L+1]
-        push!(exp.args, :($(Tuple(I))))
+        push!(offsets_expr.args, :($(Tuple(I))))
     end
-    return exp
+    return :(SVector($offsets_expr))
 end

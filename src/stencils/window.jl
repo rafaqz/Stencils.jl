@@ -5,6 +5,6 @@ _window_length(R, N) = (2R + 1)^N
 # The central cell is included
 @generated function offsets(::Type{<:Window{R,N}}) where {R,N}
     D = 2R + 1
-    vals = ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N)
-    return :(SVector($vals))
+    offsets = ntuple(i -> (rem(i - 1, D) - R, (i - 1) ÷ D - R), D^N)
+    return :(SVector($offsets))
 end
