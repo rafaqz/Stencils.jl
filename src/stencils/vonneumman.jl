@@ -30,17 +30,17 @@ Using `R` and `N` type parameters removes runtime cost of generating the stencil
 compated to passing arguments/keywords.
 """
 struct VonNeumann{R,N,L,T} <: Stencil{R,N,L,T}
-    neighbors::StaticVector{L,T}
-    VonNeumann{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
+    neighbors::SVector{L,T}
+    VonNeumann{R,N,L,T}(neighbors::SVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
 end
-VonNeumann{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = VonNeumann{R,N,L,T}(neighbors)
+VonNeumann{R,N,L}(neighbors::SVector{L,T}) where {R,N,L,T} = VonNeumann{R,N,L,T}(neighbors)
 VonNeumann{R,N,L}() where {R,N,L} = VonNeumann{R,N,L}(SVector(ntuple(_ -> nothing, L))) 
-function VonNeumann{R,N}(args::StaticVector...) where {R,N}
+function VonNeumann{R,N}(args::SVector...) where {R,N}
     L = delannoy(N, R) - 1
     VonNeumann{R,N,L}(args...)
 end
-VonNeumann{R}(args::StaticVector...) where R = VonNeumann{R,2}(args...)
-VonNeumann(args::StaticVector...; radius=1, ndims=2) = VonNeumann{radius,ndims}(args...)
+VonNeumann{R}(args::SVector...) where R = VonNeumann{R,2}(args...)
+VonNeumann(args::SVector...; radius=1, ndims=2) = VonNeumann{radius,ndims}(args...)
 VonNeumann(radius::Int, ndims::Int=2) = VonNeumann{radius,ndims}()
 
 @inline setneighbors(n::VonNeumann{R,N,L}, neighbors) where {R,N,L} =
