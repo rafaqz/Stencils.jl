@@ -8,7 +8,7 @@ but should be listed in column-major order for performance.
 abstract type AbstractPositionalStencil{R,N,L,T} <: Stencil{R,N,L,T} end
 
 const CustomOffset = Tuple{Int,Vararg{Int}}
-const CustomOffsets = Union{Tuple{<:CustomOffset,Vararg{<:CustomOffset}}}
+const CustomOffsets = Tuple{<:CustomOffset,Vararg{CustomOffset}}
 
 """
     Positional <: AbstractPositionalStencil

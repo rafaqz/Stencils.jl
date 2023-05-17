@@ -20,7 +20,7 @@ Exeample: mean blur, benchmarked on an 8-core thinkpad:
 using Stencils, Statistics, BenchmarkTools
 r = rand(1000, 1000)
 A = StencilArray(r, Window(1))
-@benchmark broadcast_stencil(mean, A)
+@benchmark mapstencil(mean, A)
 
 BenchmarkTools.Trial: 1058 samples with 1 evaluation.
  Range (min … max):  2.755 ms … 9.693 ms  ┊ GC (min … max): 0.00% … 0.00%
@@ -40,7 +40,7 @@ And on the Thinkpads tiny onboard Nvidia GeForce MX330:
 using CUDA, CUDAKernels
 r = CuArray(rand(1000, 1000))
 A = StencilArray(r, Window(1))
-@benchmark broadcast_stencil(mean, A)
+@benchmark mapstencil(mean, A)
 
 BenchmarkTools.Trial: 3256 samples with 1 evaluation.
  Range (min … max):  916.833 μs …  10.147 ms  ┊ GC (min … max): 0.00% … 0.00%

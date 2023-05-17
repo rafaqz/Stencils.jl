@@ -17,7 +17,7 @@ export BoundaryCondition, Wrap, Remove
 export Padding, Conditional, Halo
 
 export stencil, neighbors, offsets, indices, distances, radius, diameter, kernel, kernelproduct
-export broadcast_stencil, broadcast_stencil!
+export mapstencil, mapstencil!
 
 include("stencil.jl")
 include("stencils/window.jl")
@@ -31,7 +31,7 @@ include("stencils/kernel.jl")
 include("boundary.jl")
 include("padding.jl")
 include("array.jl")
-include("broadcast_stencil.jl")
+include("mapstencil.jl")
 
 end # Module Stencils
 
