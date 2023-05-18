@@ -16,9 +16,10 @@ performance tools on CPUs and most GPUs, but keep a simple code base.
 
 ## What is a `Stencil` in Stencils.jl?
 
-A `Stencil` is a StaticArrays.jl `StaticVector` of values cut from an array in hte
-specified shape (initially it is filled with `nothing`s). Stencils.jl provides methods to 
-update stenctils (by rebuilding them) for any center index in an array, handling boundary conditions.
+A `Stencil` is a StaticArrays.jl `StaticVector` of values cut from an array in the
+specified shape, initially it is filled with `nothing`s. Stencils.jl provides methods to 
+update stenctils (by rebuilding them) for any center index in an array, handling boundary conditions
+by either padding or checking.
 
 Stencils.jl also provides functions to retreive the `offsets`, `indices`, `distances`
 from the center pixel, and other information about the stencil that are all compile time
