@@ -179,7 +179,7 @@ _radii(ndims::Val, ::Stencil{R}) where R = _radii(ndims, R)
 _radii(::Stencil{R,N}) where {R,N} = _radii(Val{N}(), R)
 _radii(A::AbstractArray{<:Any,N}, r) where N = _radii(Val{N}(), r)
 
-
+# Macro to define stencils
 macro stencil(name, description)
     docstring = """
 

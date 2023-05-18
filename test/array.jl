@@ -58,14 +58,14 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays
     end
 end
 
-@testset "broadcast" begin
+@testset "mapstencil" begin
     r = rand(100, 100)
     A = StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Remove(zero(eltype(r))));
     B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Remove(zero(eltype(r))));
     C = StencilArray(r, Moore{1,2}(); padding=Halo{:in}(), boundary=Remove(zero(eltype(r))));
-    @time A1 = broadcast_stencil(mean, A)
-    @time B1 = broadcast_stencil(mean, B)
-    @time C1 = broadcast_stencil(mean, C)
+    @time A1 = mapstencil(mean, A)
+    @time B1 = mapstencil(mean, B)
+    @time C1 = mapstencil(mean, C)
     @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
     # Something is wrong with boundary contions
     @test_broken A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1
