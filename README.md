@@ -111,7 +111,7 @@ for these operations that will properly handle boundary conditions.
 
 ### Example: mean blur
 
-_benchmarked on an 8-core thinkpad:_
+_benchmarked on an 8-core thinkpad T14_
 
 ```julia
 using Stencils, Statistics, BenchmarkTools
