@@ -109,7 +109,7 @@ Stencils.jl defines only direct methods, no FFTs. But it's very fast at
 mapping direct kernels over arrays. The `StencilArray` provides a wrapper
 for these operations that will properly handle boundary conditions.
 
-Example: mean blur, benchmarked on an 8-core thinkpad:
+### Example: _mean blur, benchmarked on an 8-core thinkpad:_
 
 ```julia
 using Stencils, Statistics, BenchmarkTools
