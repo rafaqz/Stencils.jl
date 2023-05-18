@@ -118,7 +118,7 @@ _benchmarked on an 8-core thinkpad T14:_
 using Stencils, Statistics, BenchmarkTools
 # Define a random array
 r = rand(1000, 1000)
-# Use a Square 3x3/radius 1 square stencil
+# Use a square 3x3/radius 1 stencil
 stencil = Window(1)
 # Wrap them both as a StencilArray
 A = StencilArray(r, stencil)
