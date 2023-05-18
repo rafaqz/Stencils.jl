@@ -59,7 +59,7 @@ end
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
         # If the center of the pixel is inside the radius
-        if sqrt(sum(map(x -> x^2, Tuple(I)))) < R - 0.5
+        if sqrt(sum(map(x -> x^2, Tuple(I)))) < R + 0.5
             push!(offsets_expr.args, Tuple(I))
         end
     end
