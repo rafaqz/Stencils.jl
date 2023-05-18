@@ -14,7 +14,7 @@ Stencils.jl builds on StaticArrays.jl and KernelAbstractions.jl to provide high
 performance tools on CPUs and most GPUs, but keep a simple code base.
 
 
-## What is a Stencil in Stencils.jl?
+## What is a `Stencil` in Stencils.jl?
 
 A `Stencil` is a StaticArrays.jl `StaticVector` of the cut out values from
 an array (although to start filled with `nothing`s). Stencils.jl provides methods to 
@@ -26,8 +26,31 @@ abstractions, usable in fast inner loops or in GPU kernels. `@generated`
 functions are used in most cases to guarantee compiling performant, type-stable
 code for all arbitrary stencil shapes and sizes.
 
+Stencils are defined with radius and number of dimensions: 
+```julia
+radius = 1
+ndims = 2
+julia> Moore(radius, ndims)
+Moore{1, 2, 8, Nothing}
+█▀█
+▀▀▀
+```
 
-There are a lot of default stencils built in, with customisable size and
+The third number -- here `8` -- is the calculated length of the Stencil. Note
+that no matter what you use for `ndims`, the stencil is still `<: StaticVector`,
+because the potential for missing positions mean we need to collapse the 
+dimesnions into one to keep things generic.
+
+You can also define stencils using the type paraemters directly:
+
+```julia
+julia> Moore{1,2}()
+Moore{1, 2, 8, Nothing}
+█▀█
+▀▀▀
+```
+
+There are a lot of default stencils built-in, with customisable size and
 dimensionality, for example:
 
 ```julia
@@ -68,7 +91,7 @@ Cross{3, 4, 25, Nothing}
    ▀   
 ```
 
-You can also make up arbitrary shapes:
+But you can also make up arbitrary shapes:
 
 ```julia
 julia> Positional((-1, 1), (-2, -1), (1, 0), (-2, 2))
