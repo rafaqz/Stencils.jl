@@ -31,7 +31,7 @@ There are a lot of default stencils built in, with customisable size and
 dimensionality, for example:
 
 ```julia
-# Most shapes look pretty similar in 1d
+# Most shapes look pretty similar in 1d (and they all look better in a terminal!)
 julia> Moore(2, 1)
 Moore{2, 1, 4, Nothing}
 █
