@@ -52,7 +52,7 @@ Window{3, 2, 49, Nothing}
 ███████
 ▀▀▀▀▀▀▀
 
-# This shape is 3d, we just cant show that in the terminal!
+# This shape is 3d, we just cant easily show that...
 julia> VonNeumann(2, 3)
 VonNeumann{2, 3, 24, Nothing}
  ▄█▄ 
