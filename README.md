@@ -18,11 +18,11 @@ performance tools on CPUs and most GPUs, but keep a simple code base.
 
 A `Stencil` is a StaticArrays.jl `StaticVector` of values cut from an array in the
 specified shape, initially it is filled with `nothing`s. Stencils.jl provides methods to 
-update stenctils (by rebuilding them) for any center index in an array, handling boundary conditions
-by either padding or checking.
+update stenctil values (by rebuilding) for any center index in an array, handling boundary conditions
+by either padding or checking bounds.
 
 Stencils.jl also provides functions to retreive the `offsets`, `indices`, `distances`
-from the center pixel, and other information about the stencil that are all compile time
+from the center pixel, and other information about the stencil. These are all compile time
 operations, usable in fast inner loops or in GPU kernels. `@generated`
 functions are used in most cases to guarantee compiling performant, type-stable
 code for all arbitrary stencil shapes and sizes.
