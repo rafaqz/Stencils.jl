@@ -8,11 +8,81 @@
 
 Stencils.jl streamlines working with stencils and neighborhoods - 
 cellular automata, convolutions and filters, for neighborhoods of any 
-(smallish) size and shape.
+(smallish) size and shape. 
 
-Stencils.jl defines only direct kernels, no FFTs. But it's fast at 
-broadcasting direct kernels. Stencils are StaticArrays.jl vectors 
-and are constucted with generated code for performance.
+Stencils.jl builds on StaticArrays.jl and KernelAbstractions.jl to provide high 
+performance tools on CPUs and most GPUs, but keep a simple code base.
+
+
+## What is a Stencil in Stencils.jl?
+
+A `Stencil` is a StaticArrays.jl `StaticVector` of the cut out values from
+an array (although to start filled with `nothing`s). Stencils.jl provides methods to 
+update it (by rebuilding) for any center index in the array, handling boundary conditions.
+
+Stencils.jl also provides functions to retreive the `offsets`, `indices`, `distances`
+from the center pixel, and other information about the stencil that are all compile time
+abstractions, usable in fast inner loops or in GPU kernels. `@generated`
+functions are used in most cases to guarantee compiling performant, type-stable
+code for all arbitrary stencil shapes and sizes.
+
+
+There are a lot of default stencils built in, with customisable size and
+dimensionality, for example:
+
+```julia
+# Most shapes look pretty similar in 1d
+julia> Moore(2, 1)
+Moore{2, 1, 4, Nothing}
+█
+▄
+▀
+
+# 2D is the default
+julia> Moore(1)
+Moore{1, 2, 8, Nothing}
+█▀█
+▀▀▀
+
+# Some shapes include the center
+julia> Window(3)
+Window{3, 2, 49, Nothing}
+███████
+███████
+███████
+▀▀▀▀▀▀▀
+
+# This shape is 3d, we just cant show that in the terminal!
+julia> VonNeumann(2, 3)
+VonNeumann{2, 3, 24, Nothing}
+ ▄█▄ 
+▀█▄█▀
+  ▀  
+
+# This is 4d
+julia> Cross(3, 4)
+Cross{3, 4, 25, Nothing}
+   █   
+▄▄▄█▄▄▄
+   █   
+   ▀   
+```
+
+You can also make up arbitrary shapes:
+
+```julia
+julia> Positional((-1, 1), (-2, -1), (1, 0), (-2, 2))
+Positional{((-1, 1), (-2, -1), (1, 0), (-2, 2)), 2, 2, 4, Nothing}
+ ▀ ▄▀
+  ▄  
+```
+
+
+## How can we use stencils?
+
+Stencils.jl defines only direct methods, no FFTs. But it's very fast at 
+mapping direct kernels over arrays. The `StencilArray` provides a wrapper
+for these operations that will properly handle boundary conditions.
 
 Exeample: mean blur, benchmarked on an 8-core thinkpad:
 
@@ -36,7 +106,7 @@ BenchmarkTools.Trial: 1058 samples with 1 evaluation.
 
 And on the Thinkpads tiny onboard Nvidia GeForce MX330:
 
-```julia
+```
 using CUDA, CUDAKernels
 r = CuArray(rand(1000, 1000))
 A = StencilArray(r, Window(1))
@@ -54,18 +124,12 @@ BenchmarkTools.Trial: 3256 samples with 1 evaluation.
  Memory estimate: 4.06 KiB, allocs estimate: 74.
 ```
 
-Stencils.jl will:
+Stencils can be used standalone, outside of `mapstencil`. For example
+in iterative cost-distance models. Stencils provides stencil `indices`,
+method so you can use them to write values into an array for the stencil 
+shape, around your specified center index.
 
-- Run on parallel CPUs and GPUs using KernelAbstractions.jl
-- Use any stencil neighborhood shapes and sizes (e.g. Moore and Von Neumann, but also ad-hoc custom offsets).
-- Have an easy to use, concise syntax.
-- Allow broadcasting stencil operations (not with broadcast syntax tho).
-- Allow using stencil in arbitrary loops both to read and write, 
-  such as in spatial cost-distance models.
-- Provide tools for array switching: where two-layered arrays can be used for
-  multiple steps of a simulations, or applying filters repeatedly using the same memory.
+## Note
 
-It should be usefull for image filtering and convolutions, but has no explicit image or color dependencies.
-
-Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, and some coordination
-may be required over 2023.
+Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, 
+and some coordination and changes may be required over 2023.

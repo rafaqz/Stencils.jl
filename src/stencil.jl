@@ -141,7 +141,7 @@ end
 # Get a array of Bool for the offsets that ar used by a Stencil
 function _bool_array(hood::Stencil{R,1}) where {R}
     rs = _radii(hood)
-    Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]]
+    Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]][:, :]
 end
 function _bool_array(hood::Stencil{R,2}) where {R}
     rs = _radii(hood)
