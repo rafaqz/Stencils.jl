@@ -22,7 +22,7 @@ update stenctils (by rebuilding them) for any center index in an array, handling
 
 Stencils.jl also provides functions to retreive the `offsets`, `indices`, `distances`
 from the center pixel, and other information about the stencil that are all compile time
-abstractions, usable in fast inner loops or in GPU kernels. `@generated`
+operations, usable in fast inner loops or in GPU kernels. `@generated`
 functions are used in most cases to guarantee compiling performant, type-stable
 code for all arbitrary stencil shapes and sizes.
 
