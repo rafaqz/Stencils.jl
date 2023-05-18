@@ -39,15 +39,17 @@ Moore{1, 2, 8, Nothing}
 The third number - here `8` - is the calculated length of the Stencil. Note
 that no matter what you use for `ndims`, the stencil is still `<: StaticVector`,
 because the potential for missing positions mean we need to collapse the 
-dimesnions into one to keep things generic.
+dimensions into one to keep things generic.
 
 You can also define stencils using the type parameters directly:
 
 ```julia
-julia> Moore{1,2}()
-Moore{1, 2, 8, Nothing}
-█▀█
-▀▀▀
+julia> Circle{3,2}()
+Circle{3, 2, 37, Nothing}
+ ▄███▄ 
+███████
+▀█████▀
+  ▀▀▀  
 ```
 
 There are a lot of default stencils built-in, with customisable size and
