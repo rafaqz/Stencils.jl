@@ -94,7 +94,8 @@ r = rand(1000, 1000)
 stencil = Window(1)
 # Wrap them both as a StencilArray
 A = StencilArray(r, stencil)
-# Map `mean` over all stencils in the array. You can use any function here - `identity` would return an array of `Window` stencils.
+# Map `mean` over all stencils in the array. You can use any function here - 
+# `identity` would return an array of `Window` stencils.
 @benchmark mapstencil(mean, A)
 
 BenchmarkTools.Trial: 1058 samples with 1 evaluation.
