@@ -111,7 +111,7 @@ for these operations that will properly handle boundary conditions.
 
 ### Example: mean blur
 
-_benchmarked on an 8-core thinkpad T14_
+_benchmarked on an 8-core thinkpad T14:_
 
 ```julia
 using Stencils, Statistics, BenchmarkTools
@@ -137,7 +137,7 @@ BenchmarkTools.Trial: 1058 samples with 1 evaluation.
  Memory estimate: 7.64 MiB, allocs estimate: 110.
 ```
 
-And on the Thinkpads tiny onboard Nvidia GeForce MX330:
+_and on the Thinkpads tiny onboard Nvidia GeForce MX330:_
 
 ```julia
 using CUDA, CUDAKernels
