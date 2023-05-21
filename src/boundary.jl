@@ -11,8 +11,8 @@ abstract type BoundaryCondition end
 
     Wrap()
 
-[`BoundaryCondition`](@ref) flag to wrap cordinates that boundary boundaries back to the
-opposite side of the grid.
+[`BoundaryCondition`](@ref) flag to wrap cordinates that boundary boundaries 
+back to the opposite side of the grid.
 """
 struct Wrap <: BoundaryCondition end
 
@@ -21,8 +21,8 @@ struct Wrap <: BoundaryCondition end
 
     Remove()
 
-[`BoundaryCondition`](@ref) flag that specifies to assign `padval` to cells that overflow 
-grid boundaries.
+[`BoundaryCondition`](@ref) flag that specifies to assign `padval` to cells
+that overflow grid boundaries.
 """
 struct Remove{PV} <: BoundaryCondition
     padval::PV

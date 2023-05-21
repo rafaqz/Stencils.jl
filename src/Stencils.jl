@@ -12,13 +12,15 @@ import SparseArrays
 
 export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered, 
     Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal
-export StencilArray
-export BoundaryCondition, Wrap, Remove
-export Padding, Conditional, Halo
 
-export stencil, neighbors, offsets, indices, distances, distance_zones, radius, 
-    diameter, kernel, kernelproduct
-export mapstencil, mapstencil!
+export StencilArray, SwitchingStencilArray
+
+export Wrap, Remove
+
+export Conditional, Halo
+
+export stencil, neighbors, offsets, indices, distances, kernelproduct, radius, diameter
+export mapstencil, mapstencil!, switch
 
 include("stencil.jl")
 include("stencils/window.jl")
