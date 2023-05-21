@@ -36,9 +36,9 @@ neighbors
 offsets
 indices
 distances
+radius
+diameter
 Stencils.distance_zones
-Stencils.radius
-Stencils.diameter
 Stencils.kernel
 Stencils.kernelproduct
 Stencils.unsafe_neighbors
