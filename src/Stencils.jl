@@ -4,7 +4,6 @@ using Adapt,
       ConstructionBase,
       KernelAbstractions,
       OffsetArrays,
-      Setfield,
       StaticArrays,
       UnicodeGraphics
 
