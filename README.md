@@ -158,6 +158,8 @@ BenchmarkTools.Trial: 3256 samples with 1 evaluation.
  Memory estimate: 4.06 KiB, allocs estimate: 74.
 ```
 
+(That is less than a nanosecond per operation - reading each 3*3 stencil, calling `mean` on it, and writing the result)
+
 Stencils can be used standalone, outside of `mapstencil`. For example
 in iterative cost-distance models. Stencils provides a stencil `indices`
 method to retreive array indices for the stencil, so you can use them to 
