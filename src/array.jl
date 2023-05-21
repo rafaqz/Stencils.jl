@@ -8,18 +8,39 @@ a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 abstract type AbstractStencilArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
 
 """
-    stencil(A::AbstractStencilArray, I::Tuple)
+    stencil(A::AbstractStencilArray)
+    stencil(A::AbstractStencilArray, I...)
 
-Get a `Stencil` with neighbors updated for indices `I`.
+Get a [`Stencil`](@ref) with neighbors updated for indices `I`.
+
+`I` can be a `CartesianIndex`, a `Tuple`, or splatted arguments.
+
+Without passing `I`, the stencil will not be updated, and will 
+likely contain `nothing` values - but it may still be useful for its
+other methods.
 """
 function stencil end
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Tuple) =
-    update_stencil(A, CartesianIndex(I))
+    stencil(A, CartesianIndex(I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianIndex,Int}...) =
     stencil(A, CartesianIndex(to_indices(A, I)))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
-    update_stencil(A, I)
+    stencil(stencil(A), A, I)
+Base.@propagate_inbounds stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
+    rebuild(stencil(A), neighbors(A, I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) = A.stencil
+
+"""
+    unsafe_stencil(x, A::AbstractArray, I) => Stencil
+
+Update the neighbors of a stencil to values from the array A around index `I`,
+without checking bounds of `I`. Bounds checking of neighbors still occurs, but
+with the assumption that `I` is inbounds.
+"""
+@inline unsafe_stencil(A::AbstractStencilArray, I::CartesianIndex) =
+    unsafe_stencil(stencil(A), A, I)
+@inline unsafe_stencil(hood::Stencil, A::AbstractStencilArray, I::CartesianIndex) =
+    stencil(hood, unsafe_neighbors(hood, A, I))
 
 """
     boundary(A::AbstractStencilArray)
@@ -58,57 +79,35 @@ end
 Get a single stencil from an array, as a `Tuple`, without checking bounds of I.
 """
 @inline unsafe_neighbors(A::AbstractStencilArray, I::CartesianIndex) =
-    unsafe_neighbors(A, stencil(A), I)
-@inline function unsafe_neighbors(A::AbstractStencilArray, hood::Stencil, I::CartesianIndex)
+    unsafe_neighbors(stencil(A), A, I)
+@inline function unsafe_neighbors(hood::Stencil, A::AbstractStencilArray, I::CartesianIndex)
     map(indices(hood, I)) do P
-        @inbounds neighbor_getindex(A, CartesianIndex(P))
+        @inbounds getneighbor(A, CartesianIndex(P))
     end
 end
-@inline function unsafe_neighbors(A::AbstractStencilArray, hood::Layered, I::CartesianIndex)
-    map(l -> unsafe_neighbors(A, l, I), hood)
+@inline function unsafe_neighbors(hood::Layered, A::AbstractStencilArray, I::CartesianIndex)
+    map(l -> unsafe_neighbors(l, A, I), hood)
 end
 
 """
-    update_stencil(x, A::AbstractArray, I) => Stencil
+    getneighbor(A::AbstractStencilArray, I::CartesianIndex)
 
-Set the neighbors of a stencil to values from the array A around index `I`.
-Bounds checks will reduce performance, aim to use `unsafe_setneighbors` directly.
-"""
-Base.@propagate_inbounds update_stencil(A::AbstractStencilArray, I::CartesianIndex) =
-    update_stencil(A, stencil(A), I)
-Base.@propagate_inbounds update_stencil(A::AbstractStencilArray, hood::StencilOrLayered, I::CartesianIndex) =
-    setneighbors(stencil(A), neighbors(A, I))
-
-"""
-    unsafe_update_stencil(x, A::AbstractArray, I) => Stencil
-
-Set the neighbors of a stencil to values from the array A around index `I`,
-without checking bounds of `I`.
-"""
-@inline unsafe_update_stencil(A::AbstractStencilArray, I::CartesianIndex) =
-    unsafe_update_stencil(A, stencil(A), I)
-@inline unsafe_update_stencil(A::AbstractStencilArray, hood::Stencil, I::CartesianIndex) =
-    setneighbors(hood, unsafe_neighbors(A, hood, I))
-
-"""
-    neighbor_getindex(A::AbstractStencilArray, I::CartesianIndex)
-
-Get an array value from the stencil neighborhood.
+Get an array value from a stencil neighborhood.
 
 This method handles boundary conditions.
 """
-Base.@propagate_inbounds function neighbor_getindex(A::AbstractStencilArray, I::CartesianIndex)
-    neighbor_getindex(A, boundary(A), padding(A), I)
+Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray, I::CartesianIndex)
+    getneighbor(A, boundary(A), padding(A), I)
 end
 # If `Halo` padded we can just use regular `getindex`
 # on the parent array, which is an `OffsetArray`
-Base.@propagate_inbounds function neighbor_getindex(A::AbstractStencilArray, ::BoundaryCondition, pad::Halo, I::CartesianIndex)
+Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray, ::BoundaryCondition, pad::Halo, I::CartesianIndex)
     @boundscheck checkbounds(parent(A), I)
     @inbounds parent(A)[I]
 end
 # `Conditional` needs handling for specific boundary conditions. 
 # For Wrap we swap the side. 
-Base.@propagate_inbounds function neighbor_getindex(A::AbstractStencilArray{S}, ::Wrap, pad::Conditional, I::CartesianIndex) where S
+Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray{S}, ::Wrap, pad::Conditional, I::CartesianIndex) where S
     sz = tuple_contents(S)
     wrapped_inds = map(Tuple(I), sz) do i, s
         i < 1 ? i + s : (i > s ? i - s : i)
@@ -117,7 +116,7 @@ Base.@propagate_inbounds function neighbor_getindex(A::AbstractStencilArray{S}, 
     return @inbounds A[wrapped_inds...]
 end
 # For Remove we use padval if out of bounds
-@inline function neighbor_getindex(A::AbstractStencilArray, padding::Remove, pad::Conditional, I::CartesianIndex)
+@inline function getneighbor(A::AbstractStencilArray, padding::Remove, pad::Conditional, I::CartesianIndex)
     checkbounds(Bool, A, I) ? (@inbounds A[I]) : padding.padval
 end
 

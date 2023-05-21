@@ -74,7 +74,7 @@ end
 
 offsets(::Type{<:Positional{O}}) where O = SVector(O)
 
-@inline function setneighbors(n::Positional{O,R,N,L}, neighbors) where {O,R,N,L}
+@inline function rebuild(n::Positional{O,R,N,L}, neighbors) where {O,R,N,L}
     Positional{O,R,N,L}(neighbors)
 end
 

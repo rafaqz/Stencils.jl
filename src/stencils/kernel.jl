@@ -81,8 +81,8 @@ function _kernel_length_error(hood, kernel)
     throw(ArgumentError("Stencil length $(length(hood)) does not match kernel length $(length(kernel))"))
 end
 
-function setneighbors(n::Kernel{R,N,L,<:Any,<:Any,K}, neighbors) where {R,N,L,K}
-    hood = setneighbors(stencil(n), neighbors)
+function rebuild(n::Kernel{R,N,L,<:Any,<:Any,K}, neighbors) where {R,N,L,K}
+    hood = rebuild(stencil(n), neighbors)
     return Kernel{R,N,L,eltype(hood),typeof(hood),K}(hood, kernel(n))
 end
 

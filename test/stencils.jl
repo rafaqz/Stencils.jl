@@ -1,5 +1,4 @@
 using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, BenchmarkTools
-using Stencils: setneighbors
 
 init = [0 0 0 1 1 1
         1 0 1 1 0 1
@@ -34,7 +33,8 @@ win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 end
 
 @testset "Window" begin
-    @test Window{1}() == Window{1,2}() == Window(zeros(3, 3))
+    @test Window{1}() == Window{1,2}() == 
+    Window(zeros(3, 3))
     window = Window{1}(SVector(init[1:3, 1:3]...))
     @test isbits(window)
     @test diameter(window) == 3
@@ -47,7 +47,7 @@ end
     @test offsets(window) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
                                      (1, 0), (-1, 1), (0, 1), (1, 1))
 
-    window2 = Stencils.setneighbors(window, SVector(win2...))
+    window2 = Stencils.rebuild(window, SVector(win2...))
     @test neighbors(window2) == SVector(win2...)
 
     @test sum(Window{1}(win1)) == 1
@@ -58,7 +58,7 @@ end
 @testset "VonNeumann" begin
     h = VonNeumann{1}()
     A = StencilArray(init, h)
-    vonneumann = Stencils.setneighbors(h, neighbors(A, (2, 2))) 
+    vonneumann = Stencils.rebuild(h, neighbors(A, (2, 2))) 
     @test offsets(vonneumann) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(vonneumann) == 1
     @test diameter(vonneumann) == 3
@@ -130,7 +130,7 @@ end
         off = ((0,-1),(-1,0),(1,0),(0,1))
         hood = Positional{off,1,2,4,}()
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))
-        k = Stencils.setneighbors(Kernel(hood, 1:4), vals)
+        k = Stencils.rebuild(Kernel(hood, 1:4), vals)
         @test kernelproduct(k) === 1 * 2 + 2 * 4 + 3 * 6 + 4 * 8 === 60
     end
 end
