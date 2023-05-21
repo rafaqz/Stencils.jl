@@ -51,8 +51,9 @@ Stencils.getneighbor
 
 ```@docs
 Stencils.BoundaryCondition
-Wrap
 Remove
+Use
+Wrap
 ```
 
 ## Padding

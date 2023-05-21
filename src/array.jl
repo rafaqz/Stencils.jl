@@ -113,7 +113,7 @@ Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray{S}, ::Wrap
     wrapped_inds = map(Tuple(I), sz) do i, s
         i < 1 ? i + s : (i > s ? i - s : i)
     end
-    @boundscheck checkbounds(parent(A), wrapped_inds)
+    @boundscheck checkbounds(parent(A), wrapped_inds...)
     return @inbounds A[wrapped_inds...]
 end
 # For Remove we use padval if out of bounds
@@ -129,6 +129,7 @@ update_boundary!(A::AbstractStencilArray) =
     update_boundary!(A, padding(A), boundary(A))
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
+update_boundary!(A::AbstractStencilArray, ::Halo{:in}, ::Use) = A
 # Halo needs updating
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{L},R} where {L}
     # Use the inner array so broadcasts over views works on GPU
@@ -334,17 +335,18 @@ Except it can be indexed at any point with `stencil` to return a filled
 
 ## Example
 
-```doctest
-using Stencils
-A = StencilArray((1:10) * (10:20)', Moore(1); boundary=Wrap())
-A .*= 2 # Broadcast works as usual
-means = mapstencil(mean, A) # mapstencil works
-stencil(A, 5, 6) # manually reading a stencil works too
+```jldoctest
+using Stencils, Statistics
+sa = StencilArray((1:10) * (10:20)', Moore(1); boundary=Wrap())
+sa .*= 2 # Broadcast works as usual
+means = mapstencil(mean, sa) # mapstencil works
+stencil(sa, 5, 6) # manually reading a stencil works too
 
-# ouput
+# output
+
 Moore{1, 2, 8, Int64}
 █▀█
-▀▀▀
+▀▀▀ 
 with neighbors:
 8-element StaticArraysCore.SVector{8, Int64} with indices SOneTo(8):
  112
@@ -430,18 +432,20 @@ array. Switching does not happen in-place, but as a new returned array.
 
 ## Example
 
-```doctest
+```jldoctest
 using Stencils, Statistics
 
-A = SwitchingStencilArray(rand(10, 10), Moore(1); boundary=Wrap())
-A .*= 2 # Broadcast works as usual
-mapstencil(mean, A) # As does runing `mapstencils
-hood = stencil(A, 5, 10) # And retreiving a stencil
+sa = SwitchingStencilArray(rand(10, 10), Moore(1); boundary=Wrap())
+sa .*= 2 # Broadcast works as usual
+mapstencil(mean, sa) # As does runing `mapstencils
+hood = stencil(sa, 5, 10) # And retreiving a stencil
 # But we can also run it in-place, here doing 10 iterations of mean blur:
 # Note: if you dont assign new variable with `A =`, the array will
 # not switch and will not be blurred.
-for i in 1:10
-    A = mapstencil!(mean, A)
+let sa = sa
+    for i in 1:10
+        sa = mapstencil!(mean, sa)
+    end
 end
 # output
 

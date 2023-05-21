@@ -125,8 +125,9 @@ Base.parent(hood::Stencil) = neighbors(hood)
 # Show
 function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,N}
     rs = _radii(Val{N}(), R)
-    println(typeof(hood))
+    show(io, typeof(hood))
     bools = _bool_array(hood)
+    println(io)
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood))
         println(io)

@@ -59,29 +59,44 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
 end
 
 @testset "mapstencil" begin
-    # Remove 
-    r = rand(100, 100)
-    A = StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Remove(zero(eltype(r))));
-    B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Remove(zero(eltype(r))));
-    C = StencilArray(r, Moore{1,2}(); padding=Halo{:in}(), boundary=Remove(zero(eltype(r))));
+    # Remove / Use
+    r = (1.0:5.0) * (100.0:105.0)'
+    A = StencilArray(r, Window{1,2}(); padding=Conditional(), boundary=Remove(zero(eltype(r))));
+    B = StencilArray(r, Window{1,2}(); padding=Halo{:out}(), boundary=Remove(zero(eltype(r))));
+    C = StencilArray(copy(r), Window{1,2}(); padding=Halo{:in}(), boundary=Stencils.Use())
     @time A1 = mapstencil(mean, A)
     @time B1 = mapstencil(mean, B)
     @time C1 = mapstencil(mean, C)
-    @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
-    # Something is wrong with boundary conditions
-    @test_broken A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1
+    @test A1 == B1
+    # `mean` just cancels out to give the same answer, inside the padding at least
+    @test A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1 == r[2:end-1, 2:end-1]
+    @time A1 = mapstencil(sum, A)
+    @time B1 = mapstencil(sum, B)
+    @time C1 = mapstencil(sum, C)
+    @test A1 == B1
+    # `sum` gives a different array
+    @test A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1 == [
+        1818.0  1836.0  1854.0  1872.0
+        2727.0  2754.0  2781.0  2808.0
+        3636.0  3672.0  3708.0  3744.0
+    ]
 
     # Wrap
-    r = rand(100, 100)
+    r = (1.0:5.0) * (100.0:105.0)'
     A = StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Wrap());
     B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
-    C = StencilArray(r, Moore{1,2}(); padding=Halo{:in}(), boundary=Wrap());
+    C = StencilArray(copy(r), Moore{1,2}(); padding=Halo{:in}(), boundary=Wrap());
     @time A1 = mapstencil(mean, A)
     @time B1 = mapstencil(mean, B)
     @time C1 = mapstencil(mean, C)
     @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
-    # Something is wrong with boundary conditions
-    @test_broken A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1
+    # But C is smaller so the outer wring is different
+    # from wrapping in a different place
+    @test A1 == B1
+    @test A1[2:end-1, 2:end-1] != C1
+    parent(A)
+    parent(B)
+    parent(C)
 end
 
 @testset "pad/unpad axes" begin
