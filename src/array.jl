@@ -39,7 +39,7 @@ with the assumption that `I` is inbounds.
 """
 @inline unsafe_stencil(A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_stencil(stencil(A), A, I)
-@inline unsafe_stencil(hood::Stencil, A::AbstractStencilArray, I::CartesianIndex) =
+@inline unsafe_stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
     stencil(hood, unsafe_neighbors(hood, A, I))
 
 """
@@ -48,6 +48,7 @@ with the assumption that `I` is inbounds.
 Get the [`BoundaryCondition`](@ref) object from an `AbstractStencilArray`.
 """
 boundary(A::AbstractStencilArray) = A.boundary
+
 """
     padding(A::AbstractStencilArray)
 
@@ -57,26 +58,27 @@ padding(A::AbstractStencilArray) = A.padding
 
 """
 
-    neighbors(hood::Stencil, A::AbstractArray, I) => SArray
+    neighbors([hood::Stencil,] A::AbstractStencilArray, I) => SArray
 
-Get a single stencil from an array, as a `Tuple`, checking bounds.
+Get stencil neighbors from `A` around center `I` as an `SVector`.
 """
 @inline neighbors(A::AbstractStencilArray, I::NTuple{<:Any,Int}) = neighbors(A, I...)
 @inline neighbors(A::AbstractStencilArray, I::Int...) = neighbors(A, CartesianIndex(I))
-@inline function neighbors(A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
+@inline neighbors(A::AbstractStencilArray, I::CartesianIndex) = neighbors(stencil(A), A, I)
+@inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
     if padding(A) isa Halo || (padding(A) isa Conditional && boundary(A) isa Wrap)  # Conditional Remove has checks internally
         low = CartesianIndex(ntuple(_ -> -R, N))
         high = CartesianIndex(ntuple(_ -> R, N))
         checkbounds(parent(A), I + low)
         checkbounds(parent(A), I + high)
     end
-    return unsafe_neighbors(A, I)
+    return unsafe_neighbors(stencil, A, I)
 end
 
 """
-    unsafe_neighbors(hood::Stencil, A::AbstractArray, I) => SArray
+    unsafe_neighbors([hood::Stencil,] A::AbstractStencilArray, I::CartesianIndex) => SArray
 
-Get a single stencil from an array, as a `Tuple`, without checking bounds of I.
+Get stencil neighbors from `A` around center `I` as an `SVector`, without checking bounds of `I`.
 """
 @inline unsafe_neighbors(A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_neighbors(stencil(A), A, I)
