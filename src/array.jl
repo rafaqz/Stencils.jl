@@ -19,7 +19,6 @@ Without passing `I`, the stencil will not be updated, and will
 likely contain `nothing` values - but it may still be useful for its
 other methods.
 """
-function stencil end
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Tuple) =
     stencil(A, CartesianIndex(I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianIndex,Int}...) =

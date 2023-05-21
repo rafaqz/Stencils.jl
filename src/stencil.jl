@@ -2,13 +2,14 @@
     Stencil <: StaticVector
 
 Stencils define a pattern of neighboring cells around the current cell.
-They reduce the dimensions of the neighborhood values into a `StaticVector`
-of neighbor values.
+They reduce the structure and dimensions of the neighborhood into a 
+`StaticVector` of values.
 
-Stencils objects are updated to contain the neighbors of a location.
-This is so that user functions can be passed a single object from whitch they
-can retreive neighbors, distances to neighbors and other information,
-rather than having this in multiple objects.
+Stencil objects are updated to contain the neighbors for an array index.
+
+This design is so that user functions can be passed a single object from 
+whitch they can retreive neighbors, distances to neighbors and other 
+information.
 
 Stencils also provide a range of compile-time utility funcitons like
 `distances` and `offsets`.
@@ -39,10 +40,7 @@ diameter(radius::Integer) = 2radius + 1
 """
     neighbors(x::Stencil) -> iterable
 
-Returns an indexable iterator for all cells in the stencil,
-either a `Tuple` of values or a range.
-
-Custom `Stencil`s must define this method.
+Returns a basic `SVector` of all cells in the stencil.
 """
 function neighbors end
 neighbors(hood::Stencil) = hood.neighbors
@@ -50,15 +48,16 @@ neighbors(hood::Stencil) = hood.neighbors
 """
     rebuild(x::Stencil, neighbors::StaticArray)
 
-Rebuild a a `Stencil`, returning and identical object with new values.
+Rebuild a `Stencil`, returning an stencil of the same
+size and shape, with new neighbor values.
 """
 function rebuild end
 
 """
-    offsets(x) -> iterable
+    offsets(x)
 
-Returns an indexable iterable over all cells in the stencil,
-containing `Tuple`s of the offset from the central cell.
+Return an `SVector` of `NTuple{N,Int}`, containing all 
+positions in the stencil as offsets from the central cell.
 
 Custom `Stencil`s must define this method.
 """
@@ -69,9 +68,9 @@ getoffset(hood, i::Int) = offsets(hood)[i]
 @generated cartesian_offsets(hood::Stencil) = map(CartesianIndex, offsets(hood))
 
 """
-    indices(x::Stencil, I::Tuple) -> iterable
+    indices(x::Stencil, I::Union{Tuple,CartesianIndex})
 
-Returns an indexable iterable of `Tuple` indices of each neighbor in the main array.
+Returns an `SVector` of `CartesianIndices` for each neighbor around `I`.
 """
 function indices end
 @inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
@@ -82,8 +81,8 @@ Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offs
 """
     distances(hood::Stencil)
 
-Get the center-to-center distance of each stencil position from the central cell,
-so that horizontally or vertically adjacent cells have a distance of `1.0`, and a
+Returns an `SVector` of center-to-center distance of each stencil position from the central
+cell, so that horizontally or vertically adjacent cells have a distance of `1.0`, and a
 diagonally adjacent cell has a distance of `sqrt(2.0)`.
 
 Values are calculated at compile time, so `distances` can be used with little overhead.
@@ -97,7 +96,7 @@ end
 """
     distance_zones(hood::Stencil)
 
-List all distance zones as a Tuple
+Returns an `SVector` of `Int` distance zones for each offset in the Stencil.
 """
 @generated function distance_zones(hood::Stencil)
     map(o -> sum(map(abs, o)), offsets(hood))
@@ -108,7 +107,7 @@ end
     kernelproduct(hood::Stencil, kernel)
 
 Returns the vector dot product of the stencil and the kernel,
-although differing from `dot` in that the dot product is not taken
+although differing from `dot` in that it is not taken
 iteratively for members of the stencil - they are treated as scalars.
 """
 function kernelproduct end
@@ -191,9 +190,6 @@ macro stencil(name, description)
         $name{R,N}()
 
     $description
-
-    Using `R` and `N` type parameters removes runtime cost of generating the stencil,
-    compated to passing arguments/keywords.
     """
 
     name = esc(name)
