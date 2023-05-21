@@ -1,12 +1,3 @@
-"""
-    AbstractPositionalStencil <: Stencil
-
-Positional stencils are tuples of coordinates that are specified in relation
-to the central point of the current cell. They can be any arbitrary shape or size,
-but should be listed in column-major order for performance.
-"""
-abstract type AbstractPositionalStencil{R,N,L,T} <: Stencil{R,N,L,T} end
-
 const CustomOffset = Tuple{Int,Vararg{Int}}
 const CustomOffsets = Tuple{<:CustomOffset,Vararg{CustomOffset}}
 
@@ -51,7 +42,7 @@ N = 1   N = 2
 Using the `O` parameter e.g. `Positional{((1, 2), (1, 1))}()` removes any
 runtime cost of generating the stencil.
 """
-struct Positional{O,R,N,L,T} <: AbstractPositionalStencil{R,N,L,T}
+struct Positional{O,R,N,L,T} <: Stencil{R,N,L,T}
     neighbors::SVector{L,T}
     Positional{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} = new{O,R,N,L,T}(neighbors)
 end

@@ -485,6 +485,11 @@ function SwitchingStencilArray{S}(
     SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
 end
 
+"""
+    switch(A::SwitchingStencilArray)
+
+Swap the source and dest of a `SwitchingStencilArray`.
+"""
 switch(A::SwitchingStencilArray) =
     SwitchingStencilArray(dest(A), source(A), stencil(A), boundary(A), padding(A))
 

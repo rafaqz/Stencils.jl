@@ -39,30 +39,30 @@ of the array with [`Wrap`](@ref).
 struct Conditional <: Padding end
 
 
-const RADIUSDOC = """
-    `radius` can be a `Stencil`, an `Int`, or a tuple of tuples,
-    e.g. for 2d it could be: `((1, 2), (2, 1))::Tuple{Tuple{Int,Int},Tuple{Int,Int}}`.
-    """
+# const RADIUSDOC = """
+#     `radius` can be a `Stencil`, an `Int`, or a tuple of tuples,
+#     e.g. for 2d it could be: `((1, 2), (2, 1))::Tuple{Tuple{Int,Int},Tuple{Int,Int}}`.
+#     """
 
-"""
-    outer_axes(A, hood::Stencil{R})
-    outer_axes(A, radius::Int)
+# """
+#     outer_axes(A, hood::Stencil{R})
+#     outer_axes(A, radius::Int)
 
-Add padding to axes of array `A`, returning a `Tuple` of `UnitRange`.
-$RADIUSDOC
-"""
+# Add padding to axes of array `A`, returning a `Tuple` of `UnitRange`.
+# $RADIUSDOC
+# """
 function outer_axes(A, r)
     map(axes(A), _radii(A, r)) do axis, r
         firstindex(axis) - r[1]:lastindex(axis) + r[2]
     end
 end
 
-"""
-    inner_axes(A, radius)
+# """
+#     inner_axes(A, radius)
 
-Remove padding of `radius` from axes of `A`, returning a `Tuple` of `UnitRange`.
-$RADIUSDOC
-"""
+# Remove padding of `radius` from axes of `A`, returning a `Tuple` of `UnitRange`.
+# $RADIUSDOC
+# """
 function inner_axes(A, r)
     ax = map(axes(A), _radii(A, r)) do axis, r
         (first(axis) + r[1]):(last(axis) - r[2])
@@ -76,13 +76,13 @@ function offset_axes(A, r)
     end
 end
 
-"""
-    inner_view(A, radius)
+# """
+#     inner_view(A, radius)
 
-Remove padding of `radius` from array `A`, returning a view of `A`.
+# Remove padding of `radius` from array `A`, returning a view of `A`.
 
-$RADIUSDOC
-"""
+# $RADIUSDOC
+# """
 function inner_view(A, r) 
     rs = _radii(A, r)
     return inner_view(parent(A), rs)
@@ -91,15 +91,15 @@ end
 inner_view(A::OffsetArray, rs::Tuple) = inner_view(parent(A), rs)
 inner_view(A::AbstractArray, rs::Tuple) = view(A, inner_axes(A, rs)...)
 
-"""
-    outer_array(A, radius; [padval])
+# """
+#     outer_array(A, radius; [padval])
 
-Add padding of `radius` to array `A`, redurning a new array.
+# Add padding of `radius` to array `A`, redurning a new array.
 
-$RADIUSDOC
+# $RADIUSDOC
 
-`padval` defaults to `zero(eltype(A))`.
-"""
+# `padval` defaults to `zero(eltype(A))`.
+# """
 pad_array(::Conditional, ::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray) = parent
 function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray{T}) where T
     rs = _radii(parent, hood)

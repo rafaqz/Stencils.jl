@@ -16,9 +16,11 @@ BackSlash
 Circle
 Cross
 ForwardSlash
+Kernel
 Horizontal
 Layered
 Moore
+Positional
 Vertical
 VonNeumann
 Window
@@ -29,23 +31,26 @@ Window
 These can be called on any `<: Stencil` object, and `Layered`.
 
 ```@docs
+stencil
 neighbors
 offsets
 indices
 distances
-distance_zones
-radius
-diameter
-kernelproduct
-update_stencil
-unsafe_update_stencil
-setneighbors
+Stencils.distance_zones
+Stencils.radius
+Stencils.diameter
+Stencils.kernel
+Stencils.kernelproduct
+Stencils.unsafe_neighbors
+Stencils.unsafe_stencil
+Stencils.rebuild
+Stencils.getneighbor
 ```
 
 ## Boundary Conditions
 
-`````@docs
-BoundaryCondition
+```@docs
+Stencils.BoundaryCondition
 Wrap
 Remove
 ```
@@ -53,7 +58,7 @@ Remove
 ## Padding
 
 ```@docs
-Padding
+Stencils.Padding
 Conditional
 Halo
 ```
@@ -61,8 +66,16 @@ Halo
 ## Stencil Arrays
 
 ```@docs
-AbstractStencilArray
+Stencils.AbstractStencilArray
 StencilArray
-AbstractSwitchStencilArray
+Stencils.AbstractSwitchingStencilArray
 SwitchingStencilArray
+```
+
+Methods on stencil arrays:
+
+```@docs
+Stencils.boundary
+Stencils.padding
+Stencils.switch
 ```

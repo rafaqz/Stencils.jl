@@ -1,11 +1,3 @@
-"""
-    AbstractKernelStencil <: Stencil
-
-Abstract supertype for kernel stencils.
-
-These can wrap any other stencil object, and include a kernel of
-the same length and positions as the stencil.
-"""
 abstract type AbstractKernelStencil{R,N,L,T,H} <: Stencil{R,N,L,T} end
 
 neighbors(hood::AbstractKernelStencil) = neighbors(stencil(hood))
