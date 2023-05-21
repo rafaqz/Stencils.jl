@@ -48,7 +48,9 @@ end
 function mapstencil!(f, dest, source::AbstractStencilArray, args::AbstractArray...)
     _checksizes((dest, source, args...))
     update_boundary!(source)
-    device = KernelAbstractions.get_device(parent(source))
+    device = KernelAbstractions.get_backend(parent(source))
+    # TODO 64 seems like a sweet spot but I'm not sure about 4
+    # or of static or dynamic size is best
     n = device isa GPU ? 64 : 4
     # This is awful but the KernelAbstractions kernel 
     # doesn't seem to be type stable with splatted args.
@@ -63,7 +65,8 @@ function mapstencil!(f, dest, source::AbstractStencilArray, args::AbstractArray.
     elseif length(args) == 4
         kernel! = mapstencil_kerneln4!(device, n)
     end
-    kernel!(f, dest, source, args...; ndrange=size(dest)) |> wait
+    # TODO this could be tuned with workgroup size?
+    kernel!(f, dest, source, args...; ndrange=size(dest))
     return dest
 end
 
