@@ -18,13 +18,13 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 UnicodeGraphics = "ebadf6b4-db70-5817-83da-4a19ad584e34"
 
 [compat]
-Adapt = "2, 3"
+Adapt = "3"
 ConstructionBase = "1"
-KernelAbstractions = "0.6, 0.7, 0.8, 0.9"
-OffsetArrays = "0.11, 1"
-Setfield = "0.6, 0.7, 0.8, 1"
+KernelAbstractions = "0.9"
+OffsetArrays = "1"
+Setfield = "1"
 SparseArrays = "1"
-StaticArrays = "0.12, 1"
+StaticArrays = "1"
 UnicodeGraphics = "0.1"
 julia = "1.6"
 
