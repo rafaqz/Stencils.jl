@@ -48,11 +48,11 @@ function neighbors end
 neighbors(hood::Stencil) = hood.neighbors
 
 """
-    setneighbors(x::Stencil, neighbors::StaticArray)
+    rebuild(x::Stencil, neighbors::StaticArray)
 
-Update the eighbors of a `Stencil`, returning and identical object with new values.
+Rebuild a a `Stencil`, returning and identical object with new values.
 """
-function setneighbors end
+function rebuild end
 
 """
     offsets(x) -> iterable
@@ -215,7 +215,7 @@ macro stencil(name, description)
         $name(args::StaticVector...; radius=1, ndims=2) = $name{radius,ndims}(args...)
         $name(radius::Int, ndims::Int=2) = $name{radius,ndims}()
 
-        @inline Stencils.setneighbors(n::$name{R,N,L}, neighbors) where {R,N,L} = $name{R,N,L}(neighbors)
+        @inline Stencils.rebuild(n::$name{R,N,L}, neighbors) where {R,N,L} = $name{R,N,L}(neighbors)
     end
     return Expr(:block, :(Base.@doc $docstring $struct_expr), func_exprs)
 end

@@ -29,8 +29,8 @@ layers(stencil::Layered) = stencil.layers
 @inline offsets(::Type{<:Layered{R,N,L,T,La}}) where {R,N,L,T,La} =
     map(p -> offsets(p), tuple_contents(La))
 
-@inline function setneighbors(h::Layered{R,N,L,T}, layerneighbors) where {R,N,L,T}
-    Layered{R,N,L,T}(map(setneighbors, layers(h), layerneighbors))
+@inline function rebuild(h::Layered{R,N,L,T}, layerneighbors) where {R,N,L,T}
+    Layered{R,N,L,T}(map(rebuild, layers(h), layerneighbors))
 end
 
 for f in (:neighbors, :offsets, :cartesian_offsets, :distances, :distance_zones)

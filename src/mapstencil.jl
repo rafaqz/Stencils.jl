@@ -13,7 +13,7 @@ function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::Abst
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     L = length(stencil(source))
     emptyneighbors = SVector{L,T}(ntuple(_ -> zero(T), L))
-    H = typeof(setneighbors(stencil(source), emptyneighbors))
+    H = typeof(rebuild(stencil(source), emptyneighbors))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
     T_return = Base._return_type(f, Tuple{H,map(eltype, args)...})
     dest = similar(parent(source), T_return, size(source))

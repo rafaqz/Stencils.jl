@@ -16,7 +16,8 @@ export StencilArray
 export BoundaryCondition, Wrap, Remove
 export Padding, Conditional, Halo
 
-export stencil, neighbors, offsets, indices, distances, radius, diameter, kernel, kernelproduct
+export stencil, neighbors, offsets, indices, distances, distance_zones, radius, 
+    diameter, kernel, kernelproduct
 export mapstencil, mapstencil!
 
 include("stencil.jl")
