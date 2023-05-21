@@ -65,7 +65,7 @@ Get stencil neighbors from `A` around center `I` as an `SVector`.
 @inline neighbors(A::AbstractStencilArray, I::Int...) = neighbors(A, CartesianIndex(I))
 @inline neighbors(A::AbstractStencilArray, I::CartesianIndex) = neighbors(stencil(A), A, I)
 @inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
-    if padding(A) isa Halo || (padding(A) isa Conditional && boundary(A) isa Wrap)  # Conditional Remove has checks internally
+    if padding(A) isa Halo  # Conditional Remove has checks internally
         low = CartesianIndex(ntuple(_ -> -R, N))
         high = CartesianIndex(ntuple(_ -> R, N))
         checkbounds(parent(A), I + low)
@@ -334,26 +334,28 @@ Except it can be indexed at any point with `stencil` to return a filled
 
 ## Example
 
-```
+```doctest
 using Stencils
-A = StencilArray((1:10) * (10:20)'; stencil=Moore(2), boundary=Wrap())
+A = StencilArray((1:10) * (10:20)', Moore(1); boundary=Wrap())
 A .*= 2 # Broadcast works as usual
-hood = stencil(A, 5, 10)
+means = mapstencil(mean, A) # mapstencil works
+stencil(A, 5, 6) # manually reading a stencil works too
 
 # ouput
-Moore{1, 2, 8, StaticArraysCore.SVector{8, Int64}}
+Moore{1, 2, 8, Int64}
 █▀█
 ▀▀▀
 with neighbors:
 8-element StaticArraysCore.SVector{8, Int64} with indices SOneTo(8):
- 144
+ 112
+ 140
+ 168
+ 120
  180
- 216
- 152
- 228
+ 128
  160
- 200
- 240
+ 192
+```
 """
 struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
     parent::A
@@ -423,30 +425,29 @@ to be applied many times.
 For most uses a `SwitchingStencilArray` works exactly the same as a
 regular array - the `dest` array can be safely ignored.
 
+However, when using `mapstencil!` you need to use the output, not the original
+array. Switching does not happen in-place, but as a new returned array.
+
 ## Example
 
-```
-using Stencils
-A = SwitchingStencilArray((1:10) * (10:20)'; stencil=Moore(2), boundary=Wrap())
-A .*= 2 # Broadcast works as usual
-hood = stencil(A, 5, 10)
+```doctest
+using Stencils, Statistics
 
-# ouput
-Moore{1, 2, 8, StaticArraysCore.SVector{8, Int64}}
-█▀█
-▀▀▀
-with neighbors:
-8-element StaticArraysCore.SVector{8, Int64} with indices SOneTo(8):
- 144
- 180
- 216
- 152
- 228
- 160
- 200
- 240
+A = SwitchingStencilArray(rand(10, 10), Moore(1); boundary=Wrap())
+A .*= 2 # Broadcast works as usual
+mapstencil(mean, A) # As does runing `mapstencils
+hood = stencil(A, 5, 10) # And retreiving a stencil
+# But we can also run it in-place, here doing 10 iterations of mean blur:
+# Note: if you dont assign new variable with `A =`, the array will
+# not switch and will not be blurred.
+for i in 1:10
+    A = mapstencil!(mean, A)
+end
+# output
+
+```
 """
-struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
+struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
     source::A
     dest::A
     stencil::H
@@ -456,7 +457,7 @@ struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N}
         map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
-        return new{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
+        return new{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
     end
 end
 
@@ -468,15 +469,12 @@ function SwitchingStencilArray(parent::AbstractArray{<:Any,N}, stencil=Window{1,
     SwitchingStencilArray(parent, stencil, boundary, padding)
 end
 # Get S from the parent size
-function SwitchingStencilArray(parent::AbstractArray, hood::StencilOrLayered, bc, padding)
-    S = Tuple{_size(padding, hood, padded_source)...}
-    SwitchingStencilArray{S}(parent, hood, bc, padding)
-end
 # Build the source and dest padded arrays
-function SwitchingStencilArray{S}(parent::AbstractArray, hood::StencilOrLayered, bc, padding) where S
+function SwitchingStencilArray(parent::AbstractArray, hood::StencilOrLayered, bc, padding)
     padded_source = pad_array(padding, bc, hood, parent)
     padded_dest = pad_array(padding, bc, hood, parent)
-    SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
+    S = Tuple{_size(padding, hood, padded_source)...}
+    return SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
 end
 function SwitchingStencilArray{S}(
     source::A, dest::A, h::H, bc::BC, padding::P
@@ -489,8 +487,10 @@ end
 
 Swap the source and dest of a `SwitchingStencilArray`.
 """
-switch(A::SwitchingStencilArray) =
-    SwitchingStencilArray(dest(A), source(A), stencil(A), boundary(A), padding(A))
+switch(A::SwitchingStencilArray{S}) where S =
+    SwitchingStencilArray{S}(dest(A), source(A), stencil(A), boundary(A), padding(A))
+
+Base.parent(A::SwitchingStencilArray) = A.source
 
 function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
     newsource = Adapt.adapt(to, A.source)

@@ -1,4 +1,4 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays
+using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
 
 @testset "StencilArray" begin
 
@@ -59,6 +59,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays
 end
 
 @testset "mapstencil" begin
+    # Remove 
     r = rand(100, 100)
     A = StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Remove(zero(eltype(r))));
     B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Remove(zero(eltype(r))));
@@ -67,7 +68,19 @@ end
     @time B1 = mapstencil(mean, B)
     @time C1 = mapstencil(mean, C)
     @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
-    # Something is wrong with boundary contions
+    # Something is wrong with boundary conditions
+    @test_broken A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1
+
+    # Wrap
+    r = rand(100, 100)
+    A = StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Wrap());
+    B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    C = StencilArray(r, Moore{1,2}(); padding=Halo{:in}(), boundary=Wrap());
+    @time A1 = mapstencil(mean, A)
+    @time B1 = mapstencil(mean, B)
+    @time C1 = mapstencil(mean, C)
+    @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
+    # Something is wrong with boundary conditions
     @test_broken A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == C1
 end
 
