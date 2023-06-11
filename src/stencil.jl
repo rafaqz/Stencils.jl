@@ -43,7 +43,7 @@ diameter(radius::Integer) = 2radius + 1
 Returns a basic `SVector` of all cells in the stencil.
 """
 function neighbors end
-neighbors(hood::Stencil) = hood.neighbors
+neighbors(hood::Stencil) = getfield(hood, :neighbors)
 
 """
     rebuild(x::Stencil, neighbors::StaticArray)
@@ -119,7 +119,7 @@ function Base.promote_rule(::Type{<:Stencil{R,N,L,T}}, ::Type{<:Stencil{R,N,L,U}
 end
 @inline Base.iterate(hood::Stencil, args...) = iterate(neighbors(hood), args...)
 Base.@propagate_inbounds Base.getindex(hood::Stencil{<:Any,<:Any,<:Any,T}, i::Int) where T =
-    hood.neighbors[i]::T
+    neighbors(hood)[i]::T
 Base.parent(hood::Stencil) = neighbors(hood)
 
 # Show
