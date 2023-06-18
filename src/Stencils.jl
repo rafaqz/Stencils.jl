@@ -29,7 +29,6 @@ include("stencils/shapes.jl")
 include("stencils/positional.jl")
 include("stencils/layered.jl")
 include("stencils/kernel.jl")
-include("stencils/named.jl")
 
 include("boundary.jl")
 include("padding.jl")
