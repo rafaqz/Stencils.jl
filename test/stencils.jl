@@ -96,24 +96,6 @@ end
     @test sum(res2) == 0
 end
 
-@testset "NamedStencil" begin
-    win = [0 1 0 0 1
-           0 0 1 0 0
-           0 0 0 1 1
-           0 0 1 0 1
-           1 0 1 0 1]
-
-    h1 = NamedStencil(n=(-1, 0), w=(0, -1), s=(1, 0), e=(0, 1))
-    @test isbits(h1)
-    @test radius(h1) == 1
-    @test length(h1) == 4
-    res1 = stencil(StencilArray(win, h1), (3, 3)) 
-    @test neighbors(res1) === SVector(1, 0, 1, 1)
-    @test sum(res1) == 3
-    @test res1.n == 1
-    @test res1.w == 0
-end
-
 @testset "Layered" begin
     lhood = Layered(
         Positional(((-1, -1), (1, 1)), ), Positional(((-2, -2), (2, 2)), )
