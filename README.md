@@ -158,7 +158,20 @@ BenchmarkTools.Trial: 3256 samples with 1 evaluation.
  Memory estimate: 4.06 KiB, allocs estimate: 74.
 ```
 
-(That is less than a nanosecond per operation - reading each 3*3 stencil, calling `mean` on it, and writing the result)
+(That is less than a nanosecond per operation - reading each 3x3 stencil, calling `mean` on it, and writing the result)
+
+And on a GTX 1080:
+
+```julia
+using CUDA
+r = CuArray(rand(1000, 1000))
+A = SwitchingStencilArray(r, Window(1))
+CUDA.@time mapstencil(mean, A);
+  0.000428 seconds (117 CPU allocations: 6.703 KiB) (1 GPU allocation: 7.629 MiB, 5.45% memmgmt time)
+# Or 428.0 μs
+```
+
+Or 
 
 Stencils can be used standalone, outside of `mapstencil`. For example
 in iterative cost-distance models. Stencils provides a stencil `indices`
