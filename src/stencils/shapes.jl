@@ -89,3 +89,19 @@ end
     end
     return :(SVector($offsets_expr))
 end
+
+@stencil Diamond """
+Diamond-shaped neighborhood (in 2 dimwnsions), without the central cell
+In 1 dimension it is identical to [`Moore`](@ref).
+"""
+@generated function offsets(::Type{<:Diamond{R,N}}) where {R,N}
+    offsets_expr = Expr(:tuple)
+    rngs = ntuple(_ -> -R:R, N)
+    for I in CartesianIndices(rngs)
+        manhatten_distance = sum(map(abs, Tuple(I)))
+        if manhatten_distance in 0:R
+            push!(offsets_expr.args, Tuple(I))
+        end
+    end
+    return :(SVector($offsets_expr))
+end
