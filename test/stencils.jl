@@ -112,6 +112,9 @@ end
         kern = SVector{9}(1:9)
         Kernel(Window{1}(), kern)
         @test_throws ArgumentError Kernel(Window{2}(), kern)
+        @test Kernel(Window{1,2}(), SMatrix{3,3}(reshape(1:9, 3, 3))) == 
+            Kernel(SMatrix{3,3}(reshape(1:9, 3, 3)))
+            Kernel(reshape(1:9, 3, 3))
         k = Kernel(Window{1,2}(kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
         @test kernelproduct(k) == sum((1:9).^2)
         @test neighbors(k) == SVector{9}(1:9)

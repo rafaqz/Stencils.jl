@@ -188,7 +188,6 @@ macro stencil(name, description)
         $name(; radius=1, ndims=2)
         $name(radius, ndims)
         $name{R,N}()
-        $name{R,N}()
 
     $description
     """
