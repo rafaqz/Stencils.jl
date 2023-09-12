@@ -60,7 +60,8 @@ struct Kernel{R,N,L,T,H,K} <: AbstractKernelStencil{R,N,L,T,H}
     stencil::H
     kernel::K
 end
-Kernel(A::AbstractMatrix) = Kernel(Window(A), A)
+Kernel(A::AbstractArray) = Kernel(Window{first(size(A)) ÷ 2,ndims(A)}(), A)
+Kernel(A::StaticArray) = Kernel(Window{first(size(A)) ÷ 2,ndims(A)}(), A)
 function Kernel(hood::H, kernel::K) where {H<:Stencil{R,N,L,T},K} where {R,N,L,T}
     length(hood) == length(kernel) || _kernel_length_error(hood, kernel)
     Kernel{R,N,L,T,H,K}(hood, kernel)
