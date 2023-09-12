@@ -250,35 +250,35 @@ radii(x::Tuple, s::Tuple) = x
 
 
 # Base methods
-# function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
-#     pad_axes = map(ax -> ax .+ R, axes(A))
-#     copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
-#     return 
-# end
-# function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
-#     pad_axes = map(ax -> ax .+ R, axes(A))
-#     copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
-#     return A
-# end
-# function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArray{<:Any,RS}) where {RD,RS}
-#     dst_axes = map(s -> RD:s + RD, size(dst))
-#     src_axes = map(s -> RS:s + RS, size(src))
-#     copyto!(parent(source(dst)), CartesianIndices(dst_axes),
-#             parent(source(src)), CartesianIndices(src_axes)
-#     )
-#     return dst
-# end
-# # Ambiguity
-# function copy!(S::AbstractStencilArray{<:Any,R,T,1} where T, A::AbstractVector) where R
-#     pad_axes = map(ax -> ax .+ R, axes(A))
-#     copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
-#     return A
-# end
-# function copy!(A::AbstractVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
-#     pad_axes = map(ax -> ax .+ R, axes(A))
-#     copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
-#     return A
-# end
+function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    return 
+end
+function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+    return A
+end
+function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArray{<:Any,RS}) where {RD,RS}
+    dst_axes = map(s -> RD:s + RD, size(dst))
+    src_axes = map(s -> RS:s + RS, size(src))
+    copyto!(parent(source(dst)), CartesianIndices(dst_axes),
+            parent(source(src)), CartesianIndices(src_axes)
+    )
+    return dst
+end
+# Ambiguity
+function copy!(S::AbstractStencilArray{<:Any,R,T,1} where T, A::AbstractVector) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    return A
+end
+function copy!(A::AbstractVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
+    pad_axes = map(ax -> ax .+ R, axes(A))
+    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+    return A
+end
 # function copy!(A::SparseArrays.AbstractCompressedVector, S::AbstractStencilArray{<:Any,R,T,1} where T) where R
 #     pad_axes = map(ax -> ax .+ R, axes(A))
 #     copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))

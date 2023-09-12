@@ -1,8 +1,5 @@
 @stencil Window "A neighboorhood of radius R that includes the central cell."
 
-Window(A::AbstractArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
-Window(A::StaticArray) = Window{(size(A, 1) - 1) ÷ 2,ndims(A)}()
-
 # The central cell is included
 @generated function offsets(::Type{<:Window{R,N}}) where {R,N}
     D = 2R + 1

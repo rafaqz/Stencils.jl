@@ -33,10 +33,7 @@ win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 end
 
 @testset "Window" begin
-    @test Window{1}() == 
-        Window{1,2}() == 
-        Window(zeros(3, 3)) == 
-        Window(SMatrix{3,3}(zeros(3, 3)))
+    @test Window{1}() == Window{1,2}()
     window = Window{1}(SVector(init[1:3, 1:3]...))
     @test isbits(window)
     @test diameter(window) == 3
@@ -115,7 +112,6 @@ end
         kern = SVector{9}(1:9)
         Kernel(Window{1}(), kern)
         @test_throws ArgumentError Kernel(Window{2}(), kern)
-        @test Kernel(Window{1,2}(), SMatrix{3,3}(reshape(1:9, 3, 3))) == Kernel(SMatrix{3,3}(reshape(1:9, 3, 3)))
         k = Kernel(Window{1,2}(kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
         @test kernelproduct(k) == sum((1:9).^2)
         @test neighbors(k) == SVector{9}(1:9)
