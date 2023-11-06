@@ -1,13 +1,22 @@
 using Stencils
 using Aqua
+using Test
 
-# Aqua.test_ambiguities([Stencils, Base, Core]) # SparseArray ambiguity hell
-Aqua.test_unbound_args(Stencils)
-Aqua.test_undefined_exports(Stencils)
-Aqua.test_project_extras(Stencils)
-Aqua.test_stale_deps(Stencils)
-Aqua.test_deps_compat(Stencils)
-Aqua.test_project_toml_formatting(Stencils)
+if VERSION >= v"1.9.0"
+    @testset "Aqua.jl" begin
+        Aqua.test_all(
+            Stencils;
+            ambiguities=(exclude=[Base.copy!],),
+            unbound_args=true,
+            undefined_exports=true,
+            project_extras=true,
+            stale_deps=true,
+            deps_compat=true,
+            project_toml_formatting=true,
+            piracy=true,
+        )
+    end
+end
 
 include("stencils.jl")
 include("array.jl")
