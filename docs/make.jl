@@ -4,7 +4,6 @@ makedocs(
     modules = [Stencils],
     sitename = "Stencils.jl",
     checkdocs = :all,
-    strict = true,
     format = Documenter.HTML(
         prettyurls=get(ENV, "CI", "false") == "true",
     ),
