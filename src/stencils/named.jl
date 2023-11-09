@@ -4,19 +4,34 @@ const CustomOffsets = Tuple{<:CustomOffset,Vararg{CustomOffset}}
 """
     NamedStencil <: AbstractStencil
 
-    NamedStencil(coord::Tuple{Vararg{Int}}...)
-    NamedStencil(offsets::Tuple{Tuple{Vararg{Int}}})
-    NamedStencil{O}()
+    NamedStencil(; kw...)
+    NamedStencil(values::NamedTuple)
+    NamedStencil{Keys}(values)
 
 A named stencil that can take arbitrary shapes where each offset
-position is named. This can make stencil code much easier to
-read by removing magic numbers.
+position is named. This can make stencil code easier to read by 
+removing magic numbers.
 
-The stencil radius is calculated from the most distant coordinate.
-For simplicity the window read from the main grid is a square with sides
-`2r + 1` around the central point.
+## Example
 
-The dimensionality `N` of the stencil is taken from the length of
+```julia
+julia> ns = NamedStencil(; west=(0, -1), north=(1, 0), south=(-1, 0), east=(0, 1)) 
+NamedStencil{(:west, :north, :south, :east), ((0, -1), (1, 0), (-1, 0), (0, 1)), 1, 2, 4, Nothing}
+▄▀▄
+ ▀ 
+julia> A = StencilArray(rand(100, 100), ns)
+
+# We can access values like this
+julia> stencil(A, (10, 10)).east
+0.9761899729941539
+
+julia> mapstencil(A) do stencil
+    stencil.east + stencil.west
+end
+```
+
+The stencil radius is calculated from the most distant coordinate,
+and the dimensionality `N` of the stencil is taken from the length of
 the first coordinate, e.g. `1`, `2` or `3`.
 """
 struct NamedStencil{K,O,R,N,L,T} <: Stencil{R,N,L,T}
