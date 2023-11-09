@@ -30,17 +30,20 @@ NamedStencil{K,O,R,N,L}(neighbors::SVector{L,T}) where {K,O,R,N,L,T} =
     NamedStencil{K,O,R,N,L,T}(neighbors)
 NamedStencil{K,O,R,N,L}() where {K,O,R,N,L} =
     NamedStencil{K,O,R,N,L}(SVector(ntuple(_ -> nothing, L)))
-function NamedStencil{K,O}(args...) where {K,O}
+function NamedStencil{K,O}() where {K,O}
     N = length(first(O))
     R = _positional_radii(N, O)
     L = length(O)
-    NamedStencil{K,O,R,N,L}(args...)
+    NamedStencil{K,O,R,N,L}()
 end
 NamedStencil(offsets::NamedTuple{K}) where K = NamedStencil{K,values(offsets)}()
 NamedStencil(; kw...) = NamedStencil(values(kw))
 NamedStencil(ns::NamedStencil) = ns
-NamedStencil{K}(offsets) where K = NamedStencil{K,Tuple(offsets)}()
+# Ambiguity
+NamedStencil{K}(offsets::Tuple) where K = NamedStencil{K,offsets}()
 NamedStencil{K}(offsets::AbstractArray) where K = NamedStencil{K,Tuple(offsets)}()
+NamedStencil{K}(offsets::StaticArray) where K = NamedStencil{K,Tuple(offsets)}()
+NamedStencil{K}(offsets::Base.Generator) where K = NamedStencil{K,Tuple(offsets)}()
 
 Base.getproperty(a::NamedStencil{K}, x::Symbol) where K = getproperty(NamedTuple{K}(values(a)), x)
 Base.getindex(a::NamedStencil, x::Symbol) = getproperty(a, x)
