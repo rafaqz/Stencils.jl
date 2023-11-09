@@ -24,12 +24,10 @@ NamedStencil{(:west, :north, :south, :east), ((0, -1), (1, 0), (-1, 0), (0, 1)),
 
 julia> A = StencilArray(rand(100, 100), ns);
 
-julia> stencil(A, (10, 10)).east # We can access values by name
+julia> stencil(A, (10, 10)).east # we can access values by name
 0.9761899729941539
 
-julia> mapstencil(A) do stencil # And use them in `mapstencil` functions
-    stencil.east + stencil.west
-end
+julia> mapstencil(s -> s.east + s.west, A) # and use them in `mapstencil` functions
 ```
 
 The stencil radius is calculated from the most distant coordinate,
