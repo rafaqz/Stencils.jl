@@ -130,8 +130,8 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     println(io)
     print(io, UnicodeGraphics.blockize(bools))
     if !isnothing(neighbors(hood))
-        println(io)
         if !isnothing(first(neighbors(hood)))
+            println(io)
             printstyled(io, "with neighbors:\n", color=:light_black)
             show(io, mime, neighbors(hood))
         end

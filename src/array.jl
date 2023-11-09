@@ -270,7 +270,8 @@ function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArr
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractStencilArray)
-    invoke(show, (AbstractArray,), A)
+    show(io, mime, Array(A))
+    println()
     println()
     show(io, mime, stencil(A))
     println()

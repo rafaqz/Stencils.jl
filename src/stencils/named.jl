@@ -14,18 +14,20 @@ removing magic numbers.
 
 ## Example
 
-```julia
+```jldoctest
+julia> using Stencils
+
 julia> ns = NamedStencil(; west=(0, -1), north=(1, 0), south=(-1, 0), east=(0, 1)) 
 NamedStencil{(:west, :north, :south, :east), ((0, -1), (1, 0), (-1, 0), (0, 1)), 1, 2, 4, Nothing}
 ▄▀▄
  ▀ 
-julia> A = StencilArray(rand(100, 100), ns)
 
-# We can access values like this
-julia> stencil(A, (10, 10)).east
+julia> A = StencilArray(rand(100, 100), ns);
+
+julia> stencil(A, (10, 10)).east # We can access values by name
 0.9761899729941539
 
-julia> mapstencil(A) do stencil
+julia> mapstencil(A) do stencil # And use them in `mapstencil` functions
     stencil.east + stencil.west
 end
 ```
