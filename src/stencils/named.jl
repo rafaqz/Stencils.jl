@@ -40,6 +40,7 @@ NamedStencil(offsets::NamedTuple{K}) where K = NamedStencil{K,values(offsets)}()
 NamedStencil(; kw...) = NamedStencil(values(kw))
 NamedStencil(ns::NamedStencil) = ns
 NamedStencil{K}(offsets) where K = NamedStencil{K,Tuple(offsets)}()
+NamedStencil{K}(offsets::AbstractArray) where K = NamedStencil{K,Tuple(offsets)}()
 
 Base.getproperty(a::NamedStencil{K}, x::Symbol) where K = getproperty(NamedTuple{K}(values(a)), x)
 Base.getindex(a::NamedStencil, x::Symbol) = getproperty(a, x)
