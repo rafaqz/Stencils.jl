@@ -97,6 +97,15 @@ end
     parent(A)
     parent(B)
     parent(C)
+
+    # Ignore
+    # Cant use Ignore with Conditional
+    @test_throws ArgumentError StencilArray(r, Moore{1,2}(); padding=Conditional(), boundary=Ignore());
+    B = StencilArray(r, Moore{1,2}(); padding=Halo{:out}(), boundary=Ignore());
+    C = StencilArray(copy(r), Moore{1,2}(); padding=Halo{:in}(), boundary=Ignore());
+    @time B1 = mapstencil(mean, B)
+    @time C1 = mapstencil(mean, C)
+    @test B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
 end
 
 @testset "pad/unpad axes" begin

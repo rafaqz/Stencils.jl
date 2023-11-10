@@ -130,6 +130,9 @@ update_boundary!(A::AbstractStencilArray) =
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
 update_boundary!(A::AbstractStencilArray, ::Halo{:in}, ::Use) = A
+update_boundary!(A::AbstractStencilArray, pad::Padding, bc::Ignore) = A
+update_boundary!(A::AbstractStencilArray, pad::Conditional, bc::Ignore) = A
+# Remove
 # Halo needs updating
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{L},R} where {L}
     # Use the inner array so broadcasts over views works on GPU
@@ -141,15 +144,15 @@ end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{Y,X},R} where {Y,X}
     src = parent(parent(A))
     # Sides
-    @inbounds src[1:Y+2R, vcat(1:R, X+R+1:X+2R)] .= Ref(padval(bc))
-    @inbounds src[vcat(1:R, Y+R+1:Y+2R), 1:X+2R] .= Ref(padval(bc))
+    @inbounds src[1:Y+2R, vcat(1:R, X+R+1:X+2R)] .= (padval(bc),)
+    @inbounds src[vcat(1:R, Y+R+1:Y+2R), 1:X+2R] .= (padval(bc),)
     return A
 end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
     src = parent(parent(A))
-    @inbounds src[axes(src, 1), axes(src, 2), vcat(1:R, X+R+1:X+2R)] .= Ref(padval(bc))
-    @inbounds src[axes(src, 1), vcat(1:R, Y+R+1:Y+2R), axes(src, 3)] .= Ref(padval(bc))
-    @inbounds src[vcat(1:R, Z+R+1:Z+2R), axes(src, 2), axes(src, 3)] .= Ref(padval(bc))
+    @inbounds src[axes(src, 1), axes(src, 2), vcat(1:R, X+R+1:X+2R)] .= (padval(bc),)
+    @inbounds src[axes(src, 1), vcat(1:R, Y+R+1:Y+2R), axes(src, 3)] .= (padval(bc),)
+    @inbounds src[vcat(1:R, Z+R+1:Z+2R), axes(src, 2), axes(src, 3)] .= (padval(bc),)
     return A
 end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{L},R} where {L}
@@ -349,6 +352,7 @@ struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{
     boundary::BC
     padding::P
     function StencilArray{S,R,T,N,A,H,BC,P}(parent::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
+        check_mode(bc, padding)
         map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
@@ -442,6 +446,7 @@ struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N}
     boundary::BC
     padding::P
     function SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source::A, dest::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
+        check_mode(bc, padding)
         map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
@@ -487,3 +492,7 @@ function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
 end
 
 ConstructionBase.constructorof(::Type{<:SwitchingStencilArray{S}}) where S = SwitchingStencilArray{S}
+
+check_mode(bc::Ignore, padding::Conditional) =
+    throw(ArgumentError("Can not `Ignore` boundary conditions with `Conditional` padding"))
+check_mode(bc, padding) = nothing

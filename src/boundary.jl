@@ -6,6 +6,8 @@ These determine what happens when a stencil extends outside of the grid.
 """
 abstract type BoundaryCondition end
 
+padval(::BoundaryCondition) = nothing
+
 """
     Wrap <: BoundaryCondition
 
@@ -40,6 +42,16 @@ padval(bc::Remove) = bc.padval
 padding, which is only possible when `Halo{:in}` is used for `padding`.
 """
 struct Use <: BoundaryCondition end
+
+"""
+    Ignore <: BoundaryCondition
+
+    Ignore()
+
+[`BoundaryCondition`](@ref) flag that specifies to use the existing 
+padding, which is only possible when `Halo{:in}` is used for `padding`.
+"""
+struct Ignore <: BoundaryCondition end
 
 
 # From DynamicGrids.jl
