@@ -13,7 +13,7 @@ padval(::BoundaryCondition) = nothing
 
     Wrap()
 
-[`BoundaryCondition`](@ref) flag to wrap cordinates that boundary boundaries 
+[`BoundaryCondition`](@ref) flag to wrap cordinates that boundary boundaries
 back to the opposite side of the grid.
 """
 struct Wrap <: BoundaryCondition end
@@ -23,8 +23,13 @@ struct Wrap <: BoundaryCondition end
 
     Remove()
 
-[`BoundaryCondition`](@ref) flag that specifies to assign `padval` to cells
-that overflow grid boundaries.
+[`BoundaryCondition`](@ref) flag that specifies to assign
+`padval` to cells that overflow grid boundaries.
+
+With `Halo` padding, `Remove` is only necessary if the boundary region may
+be non-empty or may be modified (e.g. by writing manually into a stencil).
+
+Othewise use `Ignore`.
 """
 struct Remove{PV} <: BoundaryCondition
     padval::PV
@@ -38,7 +43,7 @@ padval(bc::Remove) = bc.padval
 
     Use()
 
-[`BoundaryCondition`](@ref) flag that specifies to use the existing 
+[`BoundaryCondition`](@ref) flag that specifies to use the existing
 padding, which is only possible when `Halo{:in}` is used for `padding`.
 """
 struct Use <: BoundaryCondition end
@@ -48,8 +53,15 @@ struct Use <: BoundaryCondition end
 
     Ignore()
 
-[`BoundaryCondition`](@ref) flag that specifies to use the existing 
-padding, which is only possible when `Halo{:in}` is used for `padding`.
+[`BoundaryCondition`](@ref) that simply ignores the padding values in
+the `Halo`. This is useful when the array is known to have zero/empty
+values at the edges and that the boundary region is never written to.
+
+`Ignore` removes the GPU kernel launch needed to update the halo in
+`Remove` and `Wrap`.
+
+It can't be used with `Conditional` boundaries as there is nothing to
+ignore, use `Remove` instead.
 """
 struct Ignore <: BoundaryCondition end
 
@@ -58,7 +70,7 @@ struct Ignore <: BoundaryCondition end
 
 # See interface docs
 # @inline inbounds(data::Union{GridData,AbstractSimData}, I::Tuple) = inbounds(data, I...)
-# @inline inbounds(data::Union{GridData,AbstractSimData}, I...) = 
+# @inline inbounds(data::Union{GridData,AbstractSimData}, I...) =
 #     _inbounds(boundary(data), gridsize(data), I...)
 
 # @inline function _inbounds(boundary::BoundaryCondition, size::Tuple, i1, i2)
@@ -109,10 +121,10 @@ struct Ignore <: BoundaryCondition end
 #                 # Use the runtime index
 #                 return push!(expr, (i isa Colon ? :(I[$n]) : i))
 #             end
-#             if i + o < 1 
+#             if i + o < 1
 #                 if boundary <: Remove
 #                     # Short cut out of the loop and just return the padval
-#                     return :(padinfo.padval)  
+#                     return :(padinfo.padval)
 #                 else # Wrap
 #                     # Use an index from thaae other side of this axis
 #                     push!(expr, i + o + s)
@@ -120,13 +132,13 @@ struct Ignore <: BoundaryCondition end
 #             elseif i + o > s
 #                 if boundary <: Remove
 #                     # Short cut out of the loop and just return the padvala
-#                     return :(padinfo.padval)  
+#                     return :(padinfo.padval)
 #                 else # Wrap
 #                     # Use an index from the other side of this axis
 #                     push!(expr, i + o - s)
 #                 end
 #             end
-#         end 
+#         end
 #         return :(A[$(ind_expr)...])
 #     end
 
