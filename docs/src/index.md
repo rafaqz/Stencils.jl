@@ -51,6 +51,7 @@ Stencils.getneighbor
 
 ```@docs
 Stencils.BoundaryCondition
+Ignore
 Remove
 Use
 Wrap
