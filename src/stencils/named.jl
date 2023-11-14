@@ -22,10 +22,10 @@ NamedStencil{(:west, :north, :south, :east), ((0, -1), (1, 0), (-1, 0), (0, 1)),
 ▄▀▄
  ▀ 
 
-julia> A = StencilArray(rand(100, 100), ns);
+julia> A = StencilArray((1:10) * (1:10)', ns);
 
-julia> stencil(A, (10, 10)).east # we can access values by name
-0.9761899729941539
+julia> stencil(A, (5, 5)).east # we can access values by name
+30
 
 julia> mapstencil(s -> s.east + s.west, A); # and use them in `mapstencil` functions
 ```
