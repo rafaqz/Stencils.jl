@@ -29,8 +29,10 @@ code for all arbitrary stencil shapes and sizes.
 
 Stencils are defined with radius and number of dimensions: 
 ```julia
+using Stencils
 radius = 1
 ndims = 2
+
 julia> Moore(radius, ndims)
 Moore{1, 2, 8, Nothing}
 █▀█
@@ -101,6 +103,31 @@ julia> Positional((-1, 1), (-2, -1), (1, 0), (-2, 2))
 Positional{((-1, 1), (-2, -1), (1, 0), (-2, 2)), 2, 2, 4, Nothing}
  ▀ ▄▀
   ▄  
+```
+
+You can even give each positions a name,
+so you can use the stencil like a `NamedTuple`:
+
+```julia
+julia> ns = NamedStencil(n=(-1, 0), w=(0, -1), s=(1, 0), e=(0, 1))
+NamedStencil{(:n, :w, :s, :e), ((-1, 0), (0, -1), (1, 0), (0, 1)), 1, 2, 4, Nothing}
+▄▀▄
+ ▀ 
+
+julia> A = StencilArray(
+           [0 2 0 0 4
+            0 0 6 0 0
+            0 0 0 8 7
+            0 0 3 0 1
+            5 0 1 0 9],
+           ns
+       );
+
+julia> stencil(A, (4, 4)).n
+8
+
+julia> stencil(A, (4, 4)).w
+3
 ```
 
 
