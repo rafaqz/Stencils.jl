@@ -331,7 +331,8 @@ stencil(sa, 5, 6) # manually reading a stencil works too
 
 Moore{1, 2, 8, Int64}
 █▀█
-▀▀▀ 
+▀▀▀
+
 with neighbors:
 8-element StaticArraysCore.SVector{8, Int64} with indices SOneTo(8):
  112
