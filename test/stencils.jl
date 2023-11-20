@@ -111,6 +111,16 @@ end
     @test sum(res1) == 3
     @test res1.n == 1
     @test res1.w == 0
+
+    @test mapstencil(StencilArray(win, h1)) do s
+        s.n + s.s
+    end == [
+        0 0 1 0 0
+        0 1 0 1 2
+        0 0 2 0 1
+        1 0 1 1 2
+        0 0 1 0 1
+    ]
 end
 
 @testset "Layered" begin
