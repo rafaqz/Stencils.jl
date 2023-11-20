@@ -12,8 +12,7 @@ if VERSION >= v"1.9.0"
             project_extras=true,
             stale_deps=true,
             deps_compat=true,
-            project_toml_formatting=true,
-            piracy=true,
+            piracies=true,
         )
     end
 end
