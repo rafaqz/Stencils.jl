@@ -1,4 +1,4 @@
-@stencil Cross "A cross-shaped neighboorhood where offsets of zero on at least N-1 axes are included in the neighborhoods"
+@stencil Cross "A cross-shaped neighboorhood where positions with offsets of `0` on least `N-1` axes are included"
 @generated function offsets(::Type{<:Cross{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -9,7 +9,7 @@
     return :(SVector($offsets_expr))
 end
 
-@stencil AngledCross "A neighboorhood where offsets of zero on at least N-1 axes are included in the neighborhoods"
+@stencil AngledCross "A neighboorhood where all diagonals are included, for `2:N` dimensions"
 @generated function offsets(::Type{<:AngledCross{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -24,7 +24,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil ForwardSlash "A neighboorhood where offsets of zero on at least N-1 axes are included in the neighborhoods"
+@stencil ForwardSlash "A neighboorhood where only 'forward' diagonals are included. Contains `2R+1` neighbors for `2:N` dimensions"
 @generated function offsets(::Type{<:ForwardSlash{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -39,7 +39,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil BackSlash "A neighboorhood where offsets of zero on at least N-1 axes are included in the neighborhoods"
+@stencil BackSlash "A neighboorhood along the 'backwards' diagonal. Contains `2R+1` neighbors for for `2:N` dimensions"
 @generated function offsets(::Type{<:BackSlash{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -54,7 +54,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil Circle "A circular stencil"
+@stencil Circle "A circular or spherical stencil"
 @generated function offsets(::Type{<:Circle{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -66,7 +66,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil Vertical "A vertical bar"
+@stencil Vertical "A vertical bar or plane"
 @generated function offsets(::Type{<:Vertical{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -78,7 +78,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil Horizontal "A horizontal bar"
+@stencil Horizontal "A horizontal bar or plane"
 @generated function offsets(::Type{<:Horizontal{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     for I in CartesianIndices(ntuple(_ -> OffsetArrays.IdOffsetRange(-R:R), N))
@@ -90,10 +90,7 @@ end
     return :(SVector($offsets_expr))
 end
 
-@stencil Diamond """
-Diamond-shaped neighborhood (in 2 dimwnsions), without the central cell
-In 1 dimension it is identical to [`Moore`](@ref).
-"""
+@stencil Diamond "A diamond or regular octahedron"
 @generated function offsets(::Type{<:Diamond{R,N}}) where {R,N}
     offsets_expr = Expr(:tuple)
     rngs = ntuple(_ -> -R:R, N)
