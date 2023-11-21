@@ -8,7 +8,7 @@ They reduce the structure and dimensions of the neighborhood into a
 Stencil objects are updated to contain the neighbors for an array index.
 
 This design is so that user functions can be passed a single object from
-which they can retreive neighbors, offsets, distances to neighbors and other
+which they can retrieve neighbors, offsets, distances to neighbors and other
 information.
 
 Stencils also provide a range of compile-time utility funcitons like
