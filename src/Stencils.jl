@@ -10,7 +10,7 @@ using Adapt,
 import SparseArrays
 
 export Stencil, Window, Kernel, Moore, VonNeumann, Positional, Layered, 
-    Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal, NamedStencil
+    Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal, Diamond, NamedStencil
 
 export StencilArray, SwitchingStencilArray
 
