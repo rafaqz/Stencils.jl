@@ -1,10 +1,11 @@
 """
-    mapstencil(f, hood::Stencil, args...)
+    mapstencil(f, A::StencilArray, args::AbstractArray...)
+    mapstencil(f, stencil::Stencil, A::AbstractArray, args::AbstractArray...)
 
-Simple stencil application, where `f` is passed
-each stencil in `A`, returning a new array.
+Stencil mapping where `f` is passed a [`Stencil`](@ref) centered at each
+index in `A`, followed by the values from `args` at each stencil center.
 
-The result is smaller than `A` on all sides, by the stencil radius.
+The result is returned as a new array.
 """
 function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
     _checksizes((source, args...))
@@ -25,11 +26,12 @@ mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; 
 kernel_setup() = KernelAbstractions.CPU(), 1
 
 """
-    mapstencil!(f, dest, source::StencilArray, args...)
-    mapstencil!(f, A::SwitchingStencilArray, args...)
+    mapstencil!(f, dest::AbstractArray, source::StencilArray, args::AbstractArray...)
+    mapstencil!(f, A::SwitchingStencilArray, args::AbstractArray...)
 
-Stencil broadcast where `f` is passed each stencil
-of `src`, writing the result of `f` to `dest`.
+Stencil mapping where `f` is passed a stencil centered at each index
+in `src`, followed by the values from `args` at each stencil center.
+The result of `f` is written to `dest`.
 
 For SwitchingStencilArray the internal source and dest arrays are used,
 returning a switched version of the array.

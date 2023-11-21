@@ -2,13 +2,13 @@
     Stencil <: StaticVector
 
 Stencils define a pattern of neighboring cells around the current cell.
-They reduce the structure and dimensions of the neighborhood into a 
+They reduce the structure and dimensions of the neighborhood into a
 `StaticVector` of values.
 
 Stencil objects are updated to contain the neighbors for an array index.
 
-This design is so that user functions can be passed a single object from 
-whitch they can retreive neighbors, distances to neighbors and other 
+This design is so that user functions can be passed a single object from
+which they can retrieve neighbors, offsets, distances to neighbors and other
 information.
 
 Stencils also provide a range of compile-time utility funcitons like
@@ -61,7 +61,7 @@ function rebuild end
 """
     offsets(x)
 
-Return an `SVector` of `NTuple{N,Int}`, containing all 
+Return an `SVector` of `NTuple{N,Int}`, containing all
 positions in the stencil as offsets from the central cell.
 
 Custom `Stencil`s must define this method.
@@ -133,10 +133,10 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     show(io, typeof(hood))
     bools = _bool_array(hood)
     println(io)
-    print(io, UnicodeGraphics.blockize(bools))
+    UnicodeGraphics.uprint(io, bools, :block)
     if !isnothing(neighbors(hood))
-        println(io)
         if !isnothing(first(neighbors(hood)))
+            println(io)
             printstyled(io, "with neighbors:\n", color=:light_black)
             show(io, mime, neighbors(hood))
         end
@@ -152,7 +152,7 @@ function _bool_array(hood::Stencil{R,2}) where {R}
     rs = _radii(hood)
     Bool[((i, j) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
-function _bool_array(hood::Stencil{R,N}) where {R,N} 
+function _bool_array(hood::Stencil{R,N}) where {R,N}
     rs = _radii(hood)
     # Just show the center slice
     Bool[((i, j, ntuple(_ -> 0, N-2)...) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]

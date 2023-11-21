@@ -11,6 +11,7 @@ mapstencil!
 
 ```@docs
 Stencil
+NamedStencil
 AngledCross
 BackSlash
 Circle
