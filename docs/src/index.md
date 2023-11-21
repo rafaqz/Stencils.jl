@@ -16,6 +16,7 @@ AngledCross
 BackSlash
 Circle
 Cross
+Diamond
 ForwardSlash
 Kernel
 Horizontal
