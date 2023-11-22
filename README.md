@@ -201,7 +201,8 @@ CUDA.@time mapstencil(mean, A);
 Or 
 
 Stencils can be used standalone, outside of `mapstencil`. For example
-in iterative cost-distance models. Stencils provides a stencil `indices`
+in iterative cost-distance models. Stencils provides a `stencil` method
+to fill a stencil for a particular location `stencil(A, I)`. It also has an `indices`
 method to retreive array indices for the stencil, so you can use them to 
 write values into an array for the stencil shape around your specified center index.
 
