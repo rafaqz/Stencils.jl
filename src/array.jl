@@ -308,8 +308,16 @@ Base.similar(A::AbstractStencilArray, I::Tuple{Int,Vararg{Int}}) = similar(paren
 Base.similar(A::AbstractStencilArray, ::Type{T}, I::Tuple{Int,Vararg{Int}}) where T =
     similar(parent(parent(A)), T, I)
 
+
+const STENCILARRAY_KEYWORDS = """
+- `boundary`: a [`BoundaryCondition`](@ref) like [`Wrap`](@ref).
+- `padding`: [`Padding`](@ref) like [`Conditional`](@ref) or [`Halo{:in}`](@ref).
+"""
+
 """
     StencilArray <: AbstractStencilArray
+
+    StencilArray(A::AbstractArray, stencil::Stencil; kw...)
 
 An array with a [`Stencil`](@ref) and a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 
@@ -317,6 +325,15 @@ For most uses a `StencilArray` works exactly the same as a regular array.
 
 Except it can be indexed at any point with `stencil` to return a filled
 `Stencil` object, or `neighbors` to return an `SVector` of neighbors.
+
+## Arguments
+
+- `A`: an AbstractArray
+- `stencil`: a [`Stencil`](@ref).
+
+## Keywords
+
+$STENCILARRAY_KEYWORDS
 
 ## Example
 

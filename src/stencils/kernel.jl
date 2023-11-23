@@ -54,7 +54,9 @@ end
     Kernel(stencil, kernel)
 
 Wrap any other stencil object, and includes a kernel of
-the same length and positions as the stencil.
+the same length and positions as the stencil. A function of
+the stencil and kernel, like [`kernelproduct`](@ref) can be used in 
+[`mapstencil`](@ref).
 """
 struct Kernel{R,N,L,T,H,K} <: AbstractKernelStencil{R,N,L,T,H}
     stencil::H

@@ -1,9 +1,13 @@
 """
     mapstencil(f, A::StencilArray, args::AbstractArray...)
-    mapstencil(f, stencil::Stencil, A::AbstractArray, args::AbstractArray...)
+    mapstencil(f, stencil::Stencil, A::AbstractArray, args::AbstractArray...; kw...)
 
 Stencil mapping where `f` is passed a [`Stencil`](@ref) centered at each
 index in `A`, followed by the values from `args` at each stencil center.
+
+## Keywords
+
+$STENCILARRAY_KEYWORDS 
 
 The result is returned as a new array.
 """
