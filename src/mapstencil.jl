@@ -17,7 +17,7 @@ function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::Abst
     bc = boundary(source)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     L = length(stencil(source))
-    emptyneighbors = SVector{L,T}(ntuple(_ -> zero(T), L))
+    emptyneighbors = _zero_values(T1, stencil(source))
     H = typeof(rebuild(stencil(source), emptyneighbors))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
     T_return = Base._return_type(f, Tuple{H,map(eltype, args)...})
@@ -26,6 +26,8 @@ function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::Abst
 end
 mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...) =
     mapstencil(f, StencilArray(A, hood; kw...), args...)
+
+_zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
 
 kernel_setup() = KernelAbstractions.CPU(), 1
 
