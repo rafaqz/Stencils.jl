@@ -124,15 +124,28 @@ end
 end
 
 @testset "Layered" begin
-    lhood = Layered(
+    layered = Layered(
         Positional(((-1, -1), (1, 1)), ), Positional(((-2, -2), (2, 2)), )
     )
-    @test isbits(lhood)
-    @test radius(lhood) == 2
-    @test offsets(lhood) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
-    @test indices(lhood, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
-    lhood1 = stencil(StencilArray(reshape(1:25, 5, 5), lhood), (3, 3))
-    @test neighbors(lhood1) == (SVector(7, 19), SVector(1, 25))
+    @test isbits(layered)
+    @test radius(layered) == 2
+    @test offsets(layered) == (SVector((-1, -1), (1, 1)), SVector((-2, -2), (2, 2)))
+    @test indices(layered, (1, 1)) === (SVector((0, 0), (2, 2)), SVector((-1, -1), (3, 3)))
+    A = StencilArray(collect(reshape(1:25, 5, 5)), layered)
+    layered_filled = stencil(A, (3, 3))
+    @test neighbors(layered_filled) == (SVector(7, 19), SVector(1, 25))
+    mapstencil(A) do l
+        sum(l[1]) - sum(l[2])
+    end
+    l1 = Layered(; a=Positional(((-1, -1), (1, 1)), ), b=Positional(((-2, -2), (2, 2))))
+    l2 = Layered(; a=Positional(((-1, -1), (1, 1)), ), b=Positional(((-2, -2), (2, 2))))
+    multi_layered = Layered(; l1, l2)
+    A = StencilArray(collect(reshape(1:25, 5, 5)), multi_layered)
+    ml_filled = stencil(A, (3, 3))
+    @test ml_filled.l2.a == [7, 19]
+    mapstencil(A) do l
+        sum(l.l1.b) - sum(l.l2.a)
+    end
 end
 
 @testset "Kernel" begin

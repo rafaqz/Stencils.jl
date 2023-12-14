@@ -129,7 +129,7 @@ update_boundary!(A::AbstractStencilArray) =
     update_boundary!(A, padding(A), boundary(A))
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
-update_boundary!(A::AbstractStencilArray, ::Halo{:in}, ::Use) = A
+update_boundary!(A::AbstractStencilArray, ::Halo, ::Use) = A
 # Halo needs updating
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{L},R} where {L}
     # Use the inner array so broadcasts over views works on GPU
