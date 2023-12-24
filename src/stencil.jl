@@ -80,7 +80,12 @@ Returns an `SVector` of `CartesianIndices` for each neighbor around `I`.
 function indices end
 @inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
 @inline indices(hood::Stencil, I::Int...) = indices(hood, I)
-@inline indices(hood::Stencil, I) = map(O -> map(+, O, I), offsets(hood))
+# Allow trailing indices - we can use a Stencil with N smaller than the array N
+@inline function indices(hood::Stencil{<:Any,N1}, I::NTuple{N2}) where {N1,N2} 
+    map(I1 -> (I1..., I[N1+1:N2]...), indices(hood, I[1:N1])) 
+end
+@inline indices(hood::Stencil{<:Any,N}, I::NTuple{N}) where N = map(O -> map(+, O, I), offsets(hood))
+
 Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offsets(hood)[i]) + center
 
 """

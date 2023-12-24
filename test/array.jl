@@ -41,6 +41,14 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
         @test all(==(0.0), B)
         @test all(==(0.0), C)
     end
+
+    @testset "1d Window on 2d match 2d line on 2d" begin
+        r = rand(100, 100)
+        A2d1d = StencilArray(copy(r), Window{1,1}(), padding=Conditional(), boundary=Remove(0.0));
+        A2dline = StencilArray(copy(r), Vertical{1,2}(), padding=Conditional(), boundary=Remove(0.0));
+        @test mapstencil(sum, A2dline) == mapstencil(sum, A2d1d)
+    end
+
     @testset "3d" begin
         r = rand(100, 100, 100)
         A = StencilArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary=Remove(0.0));
@@ -55,6 +63,17 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
         D .= 0.0
         axes(parent(D))
         @test all(==(0.0), D)
+    end
+
+    @testset "2d Window on 2d match 2d line on 2d" begin
+        r = rand(100, 100, 100)
+        window_2d = Window{1,2}()
+        pos_3d = Positional((-1, -1, 0), (0, -1, 0), (1, -1, 0), (-1, 0, 0), (0, 0, 0), (1, 0, 0), (-1, 1, 0), (0, 1, 0), (1, 1, 0))
+        @test indices(window_2d, (10, 10, 10)) == indices(pos_3d, (10, 10, 10))
+        A3d_window_2d = StencilArray(copy(r), window_2d, padding=Conditional(), boundary=Remove(0.0));
+        A3d_pos_3d = StencilArray(copy(r), pos_3d, padding=Conditional(), boundary=Remove(0.0));
+        @test neighbors(A3d_window_2d, (10, 10, 10)) == neighbors(A3d_pos_3d, (10, 10, 10))
+        @test mapstencil(sum, A3d_window_2d) == mapstencil(sum, A3d_pos_3d)
     end
 end
 

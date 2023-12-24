@@ -26,7 +26,7 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianInde
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
     stencil(stencil(A), A, I)
 Base.@propagate_inbounds stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(stencil(A), neighbors(A, I))
+    rebuild(hood, neighbors(hood, A, I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) = A.stencil
 
 """
@@ -362,7 +362,7 @@ with neighbors:
  192
 ```
 """
-struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
+struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
     parent::A
     stencil::H
     boundary::BC
@@ -454,7 +454,7 @@ end
 
 ```
 """
-struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
+struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
     source::A
     dest::A
     stencil::H
