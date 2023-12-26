@@ -30,7 +30,10 @@ Positional{((0, -1), (2, 1), (-1, 1), (0, 1)), 2, 2, 4, Nothing}
 """
 struct Positional{O,R,N,L,T} <: Stencil{R,N,L,T}
     neighbors::SVector{L,T}
-    Positional{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} = new{O,R,N,L,T}(neighbors)
+    function Positional{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} 
+        @assert all(map(o -> length(o) == N, O)) "All offsets must be the length `N` of $N, got $O" 
+        new{O,R,N,L,T}(neighbors)
+    end
 end
 Positional{O,R,N,L}(neighbors::SVector{L,T}) where {O,R,N,L,T} = 
     Positional{O,R,N,L,T}(neighbors)
