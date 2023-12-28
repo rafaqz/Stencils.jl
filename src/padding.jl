@@ -88,7 +88,6 @@ function inner_view(A, r)
     return inner_view(parent(A), rs)
 end
 # Unwrap the OffsetArray
-inner_view(A::OffsetArray, rs::Tuple) = inner_view(parent(A), rs)
 inner_view(A::AbstractArray, rs::Tuple) = view(A, inner_axes(A, rs)...)
 
 # """
@@ -101,14 +100,11 @@ inner_view(A::AbstractArray, rs::Tuple) = view(A, inner_axes(A, rs)...)
 # `padval` defaults to `zero(eltype(A))`.
 # """
 pad_array(::Conditional, ::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray) = parent
+pad_array(::Halo{:in}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray) = parent
 function pad_array(::Halo{:out}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray{T}) where T
     rs = _radii(parent, hood)
     padded_axes = outer_axes(parent, rs)
     padded_parent = similar(parent, T, length.(padded_axes))
     inner_view(padded_parent, rs) .= parent
-    padded_offset = OffsetArray(padded_parent, padded_axes)
-    return padded_offset
-end
-function pad_array(::Halo{:in}, bc::BoundaryCondition, hood::StencilOrLayered, parent::AbstractArray)
-    return OffsetArray(parent, offset_axes(parent, hood))
+    return padded_parent
 end

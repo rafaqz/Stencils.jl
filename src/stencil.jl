@@ -148,7 +148,8 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     end
 end
 
-# Get a array of Bool for the offsets that ar used by a Stencil
+# Get a array of Bool for the offsets that are used by a Stencil
+# This is used to build the ascii stencil shape
 function _bool_array(hood::Stencil{R,1}) where {R}
     rs = _radii(hood)
     Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]][:, :]
@@ -162,7 +163,6 @@ function _bool_array(hood::Stencil{R,N}) where {R,N}
     # Just show the center slice
     Bool[((i, j, ntuple(_ -> 0, N-2)...) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
-
 
 
 #### Utils
