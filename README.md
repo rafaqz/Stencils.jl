@@ -143,12 +143,16 @@ _benchmarked on an 8-core thinkpad T14:_
 
 ```julia
 using Stencils, Statistics, BenchmarkTools
+
 # Define a random array
 r = rand(1000, 1000)
+
 # Use a square 3x3/radius 1 stencil
 stencil = Window(1)
+
 # Wrap them both as a StencilArray
 A = StencilArray(r, stencil)
+
 # Map `mean` over all stencils in the array. You can use any function here - 
 # `identity` would return an array of `Window` stencils.
 @benchmark mapstencil(mean, A)
@@ -194,16 +198,16 @@ using CUDA
 r = CuArray(rand(1000, 1000))
 A = SwitchingStencilArray(r, Window(1))
 CUDA.@time mapstencil(mean, A);
-  0.000428 seconds (117 CPU allocations: 6.703 KiB) (1 GPU allocation: 7.629 MiB, 5.45% memmgmt time)
-# Or 428.0 μs
+  0.000216 seconds (64 CPU allocations: 3.875 KiB) (1 GPU allocation: 7.629 MiB, 5.80% memmgmt time)
+# Or 216.0 μs
 ```
 
 Or 
 
 Stencils can be used standalone, outside of `mapstencil`. For example
 in iterative cost-distance models. Stencils provides a `stencil` method
-to fill a stencil for a particular location `stencil(A, I)`. It also has an `indices`
-method to retreive array indices for the stencil, so you can use them to 
+to fill a stencil for a particular location `stencil(A, I)`. It also has an 
+`indices(A, I)` method to retreive array indices for the stencil, so you can use them to 
 write values into an array for the stencil shape around your specified center index.
 
 ## Note
