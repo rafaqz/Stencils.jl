@@ -16,7 +16,6 @@ function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::Abst
     # Get the type of the stencil
     bc = boundary(source)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
-    L = length(stencil(source))
     emptyneighbors = _zero_values(T1, stencil(source))
     H = typeof(rebuild(stencil(source), emptyneighbors))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
