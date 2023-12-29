@@ -156,20 +156,24 @@ update_boundary!(A::AbstractStencilArray, ::Halo, ::Use) = A
 @generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple,R}
     expr = Expr(:block)
     i = 1
-    for p in S.parameters
-        inds_expr = Expr(:tuple)
+    for _ in S.parameters
+        inds_expr1 = Expr(:tuple)
+        inds_expr2 = Expr(:tuple)
         for (i1, P) in enumerate(S.parameters)
             if i == i1
-                push!(inds_expr.args, :(vcat(1:R, $P+R+1:$P+2R)))
+                push!(inds_expr1.args, :(Base.OneTo(1:R)))
+                push!(inds_expr2.args, :($P+R+1:$P+2R))
             else
-                push!(inds_expr.args, :(1:$P+2R))
+                push!(inds_expr1.args, :(Base.OneTo($P+2R)))
+                push!(inds_expr2.args, :(Base.OneTo($P+2R)))
             end
         end
-        push!(expr.args, :(src[$inds_expr...] .= Ref(padval(bc))))
+        push!(expr.args, :(src[$inds_expr1...] .= (padval(bc),)))
+        push!(expr.args, :(src[$inds_expr2...] .= (padval(bc),)))
         i += 1
     end
     return quote
-        src = parent(parent(A))
+        src = parent(A)
         $expr
     end
 end
