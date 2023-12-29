@@ -52,28 +52,34 @@ function mapstencil!(f, A::SwitchingStencilArray, B::AbstractStencilArray, args:
     mapstencil!(f, dest(A), A, B, args...)
     return switch(A)
 end
-function mapstencil!(f, dest, source::AbstractStencilArray, args::AbstractArray...)
+function mapstencil!(
+    f, dest, source::AbstractStencilArray{S}, args::AbstractArray...
+) where S
     _checksizes((dest, source, args...))
     update_boundary!(source)
+
     device = KernelAbstractions.get_backend(parent(source))
-    # TODO 64 seems like a sweet spot but I'm not sure about 4
-    # or of static or dynamic size is best
-    n = device isa GPU ? 64 : 4
+    workgroups = 64 # 64 seems like a sweet spot for both CPU and GPU ?
+    sz = tuple_contents(S)
+
     # This is awful but the KernelAbstractions kernel 
     # doesn't seem to be type stable with splatted args.
     if length(args) == 0
-        kernel! = mapstencil_kerneln0!(device, n)
+        # We use a static kernel size. We have the size
+        # in the type so we may as well use it.
+        kernel! = mapstencil_kerneln0!(device, workgroups, sz)
     elseif length(args) == 1
-        kernel! = mapstencil_kerneln1!(device, n)
+        kernel! = mapstencil_kerneln1!(device, workgroups, sz)
     elseif length(args) == 2
-        kernel! = mapstencil_kerneln2!(device, n)
+        kernel! = mapstencil_kerneln2!(device, workgroups, sz)
     elseif length(args) == 3
-        kernel! = mapstencil_kerneln3!(device, n)
+        kernel! = mapstencil_kerneln3!(device, workgroups, sz)
     elseif length(args) == 4
-        kernel! = mapstencil_kerneln4!(device, n)
+        kernel! = mapstencil_kerneln4!(device, workgroups, sz)
     end
-    # TODO this could be tuned with workgroup size?
-    kernel!(f, dest, source, args...; ndrange=size(dest))
+
+    kernel!(f, dest, source, args...)
+
     return dest
 end
 
