@@ -306,7 +306,7 @@ Base.iterate(A::AbstractStencilArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<
     iterate(parent(A), args...)
 Base.parent(A::AbstractStencilArray) = A.parent
 for f in (:getindex, :view, :dotview)
-    _f_with_padding = Symbol(string("_unsafe_", f, "_with_padding"))
+    f_with_padding = Symbol(string("unsafe_", f, "_with_padding"))
     @eval begin
         # Base.@propagate_inbounds function Base.$f(
         #     A::AbstractStencilArray{<:Any,R}, I::Union{Colon,Int64,AbstractArray}...
@@ -318,25 +318,25 @@ for f in (:getindex, :view, :dotview)
             A::AbstractStencilArray{<:Any,R}, i1::Int, Is::Int...
         ) where R
             @boundscheck checkbounds(A, i1, Is...)
-            $_f_with_padding(A, padding(A), i1, Is...)
+            $f_with_padding(A, padding(A), i1, Is...)
         end
-        function $_f_with_padding(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
+        function $f_with_padding(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
             I = map(i -> i + R, I)
             @inbounds Base.$f(parent(A), I...)
         end
-        function $_f_with_padding(A::AbstractStencilArray, ::Padding, I...)
+        function $f_with_padding(A::AbstractStencilArray, ::Padding, I...)
             @inbounds Base.$f(parent(A), I...)
         end
     end
 end
 Base.@propagate_inbounds function Base.setindex!(A::AbstractStencilArray, x, I::Int...)
     @boundscheck checkbounds(A, I...)
-    _setindex_with_padding!(A, padding(A), x, I...)
+    unsafe_setindex_with_padding!(A, padding(A), x, I...)
 end
-function _setindex_with_padding!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
+function unsafe_setindex_with_padding!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
     @inbounds setindex!(parent(A), x, map(i -> i + R, I)...)
 end
-function _setindex_with_padding!(A::AbstractStencilArray, ::Padding, x, I...)
+function unsafe_setindex_with_padding!(A::AbstractStencilArray, ::Padding, x, I...)
     @inbounds setindex!(parent(A), x, I...)
 end
 
