@@ -127,7 +127,7 @@ end
     wrapped_inds = map(I, sz) do i, s
         i < 1 ? i + s : (i > s ? i - s : i)
     end
-    return unsafe_getindex_with_padding(A, pad, wrapped_inds...)
+    return unsafe_getindex(A, pad, wrapped_inds...)
 end
 # For Remove we use padval if out of bounds
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
@@ -140,7 +140,7 @@ end
 @inline function unsafe_getneighbor(
     A::AbstractStencilArray{<:Any,R}, ::BoundaryCondition, pad::Padding, I::Tuple
 ) where R
-    unsafe_getindex_with_padding(A, pad, I...)
+    unsafe_getindex(A, pad, I...)
 end
 
 # update_boundary!
@@ -310,7 +310,7 @@ Base.iterate(A::AbstractStencilArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<
     iterate(parent(A), args...)
 Base.parent(A::AbstractStencilArray) = A.parent
 for f in (:getindex, :view, :dotview)
-    f_with_padding = Symbol(string("unsafe_", f, "_with_padding"))
+    unsafe_f = Symbol(string("unsafe_", f))
     @eval begin
         # Base.@propagate_inbounds function Base.$f(
         #     A::AbstractStencilArray{<:Any,R}, I::Union{Colon,Int64,AbstractArray}...
@@ -322,27 +322,30 @@ for f in (:getindex, :view, :dotview)
             A::AbstractStencilArray{<:Any,R}, i1::Int, Is::Int...
         ) where R
             @boundscheck checkbounds(A, i1, Is...)
-            $f_with_padding(A, padding(A), i1, Is...)
+            $unsafe_f(A, padding(A), i1, Is...)
         end
-        function $f_with_padding(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
-            I = map(i -> i + R, I)
-            @inbounds Base.$f(parent(A), I...)
+        $unsafe_f(A::AbstractStencilArray, I...) = $unsafe_f(A, padding(A), I...)
+        function $unsafe_f(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
+            @inbounds Base.$f(parent(A), add_halo(A, I)...)
         end
-        function $f_with_padding(A::AbstractStencilArray, ::Padding, I...)
+        function $unsafe_f(A::AbstractStencilArray, ::Padding, I...)
             @inbounds Base.$f(parent(A), I...)
         end
     end
 end
 Base.@propagate_inbounds function Base.setindex!(A::AbstractStencilArray, x, I::Int...)
     @boundscheck checkbounds(A, I...)
-    unsafe_setindex_with_padding!(A, padding(A), x, I...)
+    unsafe_setindex!(A, x, I...)
 end
-function unsafe_setindex_with_padding!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
-    @inbounds setindex!(parent(A), x, map(i -> i + R, I)...)
+unsafe_setindex!(A::AbstractStencilArray, x, I...) = unsafe_setindex!(A, padding(A), x, I...) 
+function unsafe_setindex!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
+    @inbounds setindex!(parent(A), x, add_halo(A, I)...)
 end
-function unsafe_setindex_with_padding!(A::AbstractStencilArray, ::Padding, x, I...)
+function unsafe_setindex!(A::AbstractStencilArray, ::Padding, x, I...)
     @inbounds setindex!(parent(A), x, I...)
 end
+
+add_halo(::AbstractStencilArray{<:Any,R}, I) where R = map(i -> i + R, I)
 
 Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
 
