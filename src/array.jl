@@ -127,7 +127,7 @@ end
     wrapped_inds = map(I, sz) do i, s
         i < 1 ? i + s : (i > s ? i - s : i)
     end
-    return _unsafe_getindex_with_padding(A, pad, wrapped_inds...)
+    return unsafe_getindex_with_padding(A, pad, wrapped_inds...)
 end
 # For Remove we use padval if out of bounds
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
@@ -140,7 +140,7 @@ end
 @inline function unsafe_getneighbor(
     A::AbstractStencilArray{<:Any,R}, ::BoundaryCondition, pad::Padding, I::Tuple
 ) where R
-    _unsafe_getindex_with_padding(A, pad, I...)
+    unsafe_getindex_with_padding(A, pad, I...)
 end
 
 # update_boundary!
