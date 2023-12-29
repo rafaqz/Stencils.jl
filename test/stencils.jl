@@ -1,4 +1,4 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, BenchmarkTools
+using Stencils, Test, LinearAlgebra, StaticArrays, BenchmarkTools
 
 init = [0 0 0 1 1 1
         1 0 1 1 0 1

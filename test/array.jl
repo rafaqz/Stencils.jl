@@ -1,4 +1,4 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
+using Stencils, Test, LinearAlgebra, StaticArrays, Statistics
 
 @testset "StencilArray" begin
 
@@ -23,11 +23,11 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
         C = StencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary=Remove(0.0));
         @test size(A) == size(parent(A)) == (100, 100)
         @test size(B) == (100, 100)
-        @test size(parent(B)) == (120, 120)
-        @test axes(parent(B)) == (-9:110, -9:110)
-        @test size(C) == (80, 80)
-        @test size(parent(C)) == (100, 100)
-        @test axes(parent(C)) == (-9:90, -9:90)
+        @test size(parent(B)) === (120, 120)
+        @test axes(parent(B)) === (Base.OneTo(120), Base.OneTo(1:120))
+        @test size(C) === (80, 80)
+        @test size(parent(C)) === (100, 100)
+        @test axes(parent(C)) === (Base.OneTo(1:100), Base.OneTo(1:100))
         @test typeof(similar(A)) == Matrix{Float64}
         @test typeof(similar(B)) == Matrix{Float64}
         @test typeof(similar(C)) == Matrix{Float64}
@@ -41,6 +41,14 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
         @test all(==(0.0), B)
         @test all(==(0.0), C)
     end
+
+    @testset "1d Window on 2d match 2d line on 2d" begin
+        r = rand(100, 100)
+        A2d1d = StencilArray(copy(r), Window{1,1}(), padding=Conditional(), boundary=Remove(0.0));
+        A2dline = StencilArray(copy(r), Vertical{1,2}(), padding=Conditional(), boundary=Remove(0.0));
+        @test mapstencil(sum, A2dline) == mapstencil(sum, A2d1d)
+    end
+
     @testset "3d" begin
         r = rand(100, 100, 100)
         A = StencilArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary=Remove(0.0));
@@ -53,8 +61,18 @@ using Stencils, Test, LinearAlgebra, StaticArrays, OffsetArrays, Statistics
         @test size(parent(C)) == (100, 100, 100)
         D = StencilArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary=Wrap());
         D .= 0.0
-        axes(parent(D))
         @test all(==(0.0), D)
+    end
+
+    @testset "2d Window on 2d match 2d line on 2d" begin
+        r = rand(100, 100, 100)
+        window_2d = Window{1,2}()
+        pos_3d = Positional((-1, -1, 0), (0, -1, 0), (1, -1, 0), (-1, 0, 0), (0, 0, 0), (1, 0, 0), (-1, 1, 0), (0, 1, 0), (1, 1, 0))
+        @test indices(window_2d, (10, 10, 10)) == indices(pos_3d, (10, 10, 10))
+        A3d_window_2d = StencilArray(copy(r), window_2d, padding=Conditional(), boundary=Remove(0.0));
+        A3d_pos_3d = StencilArray(copy(r), pos_3d, padding=Conditional(), boundary=Remove(0.0));
+        @test neighbors(A3d_window_2d, (10, 10, 10)) == neighbors(A3d_pos_3d, (10, 10, 10))
+        @test mapstencil(sum, A3d_window_2d) == mapstencil(sum, A3d_pos_3d)
     end
 end
 

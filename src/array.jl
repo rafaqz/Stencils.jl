@@ -15,7 +15,7 @@ Get a [`Stencil`](@ref) with neighbors updated for indices `I`.
 
 `I` can be a `CartesianIndex`, a `Tuple`, or splatted arguments.
 
-Without passing `I`, the stencil will not be updated, and will 
+Without passing `I`, the stencil will not be updated, and will
 likely contain `nothing` values - but it may still be useful for its
 other methods.
 """
@@ -26,7 +26,7 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianInde
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
     stencil(stencil(A), A, I)
 Base.@propagate_inbounds stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(stencil(A), neighbors(A, I))
+    rebuild(hood, neighbors(hood, A, I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) = A.stencil
 
 """
@@ -66,12 +66,10 @@ Get stencil neighbors from `A` around center `I` as an `SVector`.
 @inline neighbors(A::AbstractStencilArray, I::CartesianIndex) = neighbors(stencil(A), A, I)
 @inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
     if padding(A) isa Halo  # Conditional Remove has checks internally
-        low = CartesianIndex(ntuple(_ -> -R, N))
-        high = CartesianIndex(ntuple(_ -> R, N))
-        checkbounds(parent(A), I + low)
-        checkbounds(parent(A), I + high)
+        checkbounds(parent(A), I)
+        checkbounds(parent(A), I + CartesianIndex(ntuple(_ -> 2R, N)))
     end
-    return unsafe_neighbors(stencil, A, I)
+    return @inbounds unsafe_neighbors(stencil, A, I)
 end
 
 """
@@ -79,15 +77,35 @@ end
 
 Get stencil neighbors from `A` around center `I` as an `SVector`, without checking bounds of `I`.
 """
-@inline unsafe_neighbors(A::AbstractStencilArray, I::CartesianIndex) =
-    unsafe_neighbors(stencil(A), A, I)
-@inline function unsafe_neighbors(hood::Stencil, A::AbstractStencilArray, I::CartesianIndex)
-    map(indices(hood, I)) do P
-        @inbounds getneighbor(A, CartesianIndex(P))
+@inline unsafe_neighbors(A::AbstractStencilArray, I::CartesianIndex) = unsafe_neighbors(stencil(A), A, I)
+@inline unsafe_neighbors(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) = 
+    unsafe_neighbors(stencil, padding(A), A, I)
+@inline function unsafe_neighbors(
+    hood::Stencil, ::Padding, A::AbstractStencilArray{<:Any,R}, I::CartesianIndex
+) where R
+    map(indices(hood, I)) do N
+        unsafe_getneighbor(A, N)
     end
 end
-@inline function unsafe_neighbors(hood::Layered, A::AbstractStencilArray, I::CartesianIndex)
-    map(l -> unsafe_neighbors(l, A, I), hood)
+@inline function unsafe_neighbors(
+    hood::Stencil, ::Conditional, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex
+) where {R,N}
+    # If the stencil corners are in-bounds we don't need bounds checks later
+    radii = CartesianIndex(ntuple(_ -> -R, N))
+    if checkbounds(Bool, A, I + radii) && checkbounds(Bool, A, I - radii)
+        map(indices(hood, I)) do N
+            unsafe_getneighbor(A, N)
+        end
+    else
+        map(indices(hood, I)) do N
+            getneighbor(A, N)
+        end
+    end
+end
+@inline function unsafe_neighbors(
+    hood::Layered, p::Padding, A::AbstractStencilArray, I::CartesianIndex
+)
+    map(l -> unsafe_neighbors(l, p, A, I), hood)
 end
 
 """
@@ -97,28 +115,32 @@ Get an array value from a stencil neighborhood.
 
 This method handles boundary conditions.
 """
-Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray, I::CartesianIndex)
+@inline function getneighbor(A::AbstractStencilArray, I::Tuple)
     getneighbor(A, boundary(A), padding(A), I)
 end
-# If `Halo` padded we can just use regular `getindex`
-# on the parent array, which is an `OffsetArray`
-Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray, ::BoundaryCondition, pad::Halo, I::CartesianIndex)
-    @boundscheck checkbounds(parent(A), I)
-    @inbounds parent(A)[I]
-end
-# `Conditional` needs handling for specific boundary conditions. 
-# For Wrap we swap the side. 
-Base.@propagate_inbounds function getneighbor(A::AbstractStencilArray{S}, ::Wrap, pad::Conditional, I::CartesianIndex) where S
+# `Conditional` needs handling for specific boundary conditions.
+# For Wrap we swap the side.
+@inline function getneighbor(
+    A::AbstractStencilArray{S,R}, ::Wrap, pad::Conditional, I::Tuple
+) where {S,R}
     sz = tuple_contents(S)
-    wrapped_inds = map(Tuple(I), sz) do i, s
+    wrapped_inds = map(I, sz) do i, s
         i < 1 ? i + s : (i > s ? i - s : i)
     end
-    @boundscheck checkbounds(parent(A), wrapped_inds...)
-    return @inbounds A[wrapped_inds...]
+    return unsafe_getindex_with_padding(A, pad, wrapped_inds...)
 end
 # For Remove we use padval if out of bounds
-@inline function getneighbor(A::AbstractStencilArray, padding::Remove, pad::Conditional, I::CartesianIndex)
-    checkbounds(Bool, A, I) ? (@inbounds A[I]) : padding.padval
+@inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
+    checkbounds(Bool, A, I...) ? (@inbounds A[I...]) : boundary.padval
+end
+
+@inline function unsafe_getneighbor(A::AbstractStencilArray, I::Tuple)
+    unsafe_getneighbor(A, boundary(A), padding(A), I)
+end
+@inline function unsafe_getneighbor(
+    A::AbstractStencilArray{<:Any,R}, ::BoundaryCondition, pad::Padding, I::Tuple
+) where R
+    unsafe_getindex_with_padding(A, pad, I...)
 end
 
 # update_boundary!
@@ -131,26 +153,29 @@ update_boundary!(A::AbstractStencilArray) =
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
 update_boundary!(A::AbstractStencilArray, ::Halo, ::Use) = A
 # Halo needs updating
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{L},R} where {L}
-    # Use the inner array so broadcasts over views works on GPU
-    # they don't through the `OffsetArray` wrapper
-    src = parent(parent(A))
-    @inbounds src[vcat(1:R, L+R+1:L+2R)] .= Ref(padval(bc))
-    return A
-end
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{Y,X},R} where {Y,X}
-    src = parent(parent(A))
-    # Sides
-    @inbounds src[1:Y+2R, vcat(1:R, X+R+1:X+2R)] .= Ref(padval(bc))
-    @inbounds src[vcat(1:R, Y+R+1:Y+2R), 1:X+2R] .= Ref(padval(bc))
-    return A
-end
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
-    src = parent(parent(A))
-    @inbounds src[axes(src, 1), axes(src, 2), vcat(1:R, X+R+1:X+2R)] .= Ref(padval(bc))
-    @inbounds src[axes(src, 1), vcat(1:R, Y+R+1:Y+2R), axes(src, 3)] .= Ref(padval(bc))
-    @inbounds src[vcat(1:R, Z+R+1:Z+2R), axes(src, 2), axes(src, 3)] .= Ref(padval(bc))
-    return A
+@generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple,R}
+    expr = Expr(:block)
+    i = 1
+    for _ in S.parameters
+        inds_expr1 = Expr(:tuple)
+        inds_expr2 = Expr(:tuple)
+        for (i1, P) in enumerate(S.parameters)
+            if i == i1
+                push!(inds_expr1.args, :(Base.OneTo(1:R)))
+                push!(inds_expr2.args, :($P+R+1:$P+2R))
+            else
+                push!(inds_expr1.args, :(Base.OneTo($P+2R)))
+                push!(inds_expr2.args, :(Base.OneTo($P+2R)))
+            end
+        end
+        push!(expr.args, :(src[$inds_expr1...] .= (padval(bc),)))
+        push!(expr.args, :(src[$inds_expr2...] .= (padval(bc),)))
+        i += 1
+    end
+    return quote
+        src = parent(A)
+        $expr
+    end
 end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{L},R} where {L}
     src = parent(A)
@@ -253,7 +278,7 @@ radii(x::Tuple, s::Tuple) = x
 function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
     pad_axes = map(ax -> ax .+ R, axes(A))
     copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
-    return 
+    return
 end
 function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
     pad_axes = map(ax -> ax .+ R, axes(A))
@@ -285,21 +310,40 @@ Base.iterate(A::AbstractStencilArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<
     iterate(parent(A), args...)
 Base.parent(A::AbstractStencilArray) = A.parent
 for f in (:getindex, :view, :dotview)
+    f_with_padding = Symbol(string("unsafe_", f, "_with_padding"))
     @eval begin
-        Base.@propagate_inbounds function Base.$f(A::AbstractStencilArray, I::Union{Colon,Int64,AbstractArray}...)
-            @boundscheck checkbounds(A, I...)
+        # Base.@propagate_inbounds function Base.$f(
+        #     A::AbstractStencilArray{<:Any,R}, I::Union{Colon,Int64,AbstractArray}...
+        # ) where R
+        #     @boundscheck checkbounds(A, I...)
+        #     @inbounds Base.$f(parent(A), I...)
+        # end
+        Base.@propagate_inbounds function Base.$f(
+            A::AbstractStencilArray{<:Any,R}, i1::Int, Is::Int...
+        ) where R
+            @boundscheck checkbounds(A, i1, Is...)
+            $f_with_padding(A, padding(A), i1, Is...)
+        end
+        function $f_with_padding(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
+            I = map(i -> i + R, I)
             @inbounds Base.$f(parent(A), I...)
         end
-        Base.@propagate_inbounds function Base.$f(A::AbstractStencilArray, i1::Int, I::Int...)
-            @boundscheck checkbounds(A, i1, I...)
-            @inbounds Base.$f(parent(A), i1, I...)
+        function $f_with_padding(A::AbstractStencilArray, ::Padding, I...)
+            @inbounds Base.$f(parent(A), I...)
         end
     end
 end
-Base.@propagate_inbounds Base.setindex!(d::AbstractStencilArray, x, I::Int...) =
-    setindex!(parent(d), x, I...)
-Base.@propagate_inbounds Base.setindex!(d::AbstractStencilArray, x, I...) =
-    setindex!(parent(d), x, I...)
+Base.@propagate_inbounds function Base.setindex!(A::AbstractStencilArray, x, I::Int...)
+    @boundscheck checkbounds(A, I...)
+    unsafe_setindex_with_padding!(A, padding(A), x, I...)
+end
+function unsafe_setindex_with_padding!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
+    @inbounds setindex!(parent(A), x, map(i -> i + R, I)...)
+end
+function unsafe_setindex_with_padding!(A::AbstractStencilArray, ::Padding, x, I...)
+    @inbounds setindex!(parent(A), x, I...)
+end
+
 Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
 
 Base.similar(A::AbstractStencilArray) = similar(parent(parent(A)), size(A))
@@ -362,7 +406,7 @@ with neighbors:
  192
 ```
 """
-struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
+struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
     parent::A
     stencil::H
     boundary::BC
@@ -404,7 +448,7 @@ ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray
 """
     AbstractSwitchingStencilArray
 
-Abstract supertype for `AbstractStencilArray` that wrap two arrays that 
+Abstract supertype for `AbstractStencilArray` that wrap two arrays that
 switch places with each broadcast.
 """
 abstract type AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P} end
@@ -454,7 +498,7 @@ end
 
 ```
 """
-struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R,N},Layered{R,N}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
+struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
     source::A
     dest::A
     stencil::H

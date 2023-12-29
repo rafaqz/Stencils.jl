@@ -3,7 +3,6 @@ module Stencils
 using Adapt, 
       ConstructionBase,
       KernelAbstractions,
-      OffsetArrays,
       StaticArrays,
       UnicodeGraphics
 

@@ -80,7 +80,12 @@ Returns an `SVector` of `CartesianIndices` for each neighbor around `I`.
 function indices end
 @inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
 @inline indices(hood::Stencil, I::Int...) = indices(hood, I)
-@inline indices(hood::Stencil, I) = map(O -> map(+, O, I), offsets(hood))
+# Allow trailing indices - we can use a Stencil with N smaller than the array N
+@inline function indices(hood::Stencil{<:Any,N1}, I::NTuple{N2}) where {N1,N2} 
+    map(I1 -> (I1..., I[N1+1:N2]...), indices(hood, I[1:N1])) 
+end
+@inline indices(hood::Stencil{<:Any,N}, I::NTuple{N}) where N = map(O -> map(+, O, I), offsets(hood))
+
 Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offsets(hood)[i]) + center
 
 """
@@ -143,7 +148,8 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     end
 end
 
-# Get a array of Bool for the offsets that ar used by a Stencil
+# Get a array of Bool for the offsets that are used by a Stencil
+# This is used to build the ascii stencil shape
 function _bool_array(hood::Stencil{R,1}) where {R}
     rs = _radii(hood)
     Bool[((i,) in offsets(hood)) for i in -rs[1][1]:rs[1][2]][:, :]
@@ -157,7 +163,6 @@ function _bool_array(hood::Stencil{R,N}) where {R,N}
     # Just show the center slice
     Bool[((i, j, ntuple(_ -> 0, N-2)...) in offsets(hood)) for i in -rs[1][1]:rs[1][2], j in -rs[2][1]:rs[2][2]]
 end
-
 
 
 #### Utils
