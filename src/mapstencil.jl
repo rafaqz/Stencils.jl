@@ -28,7 +28,7 @@ mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; 
 
 _zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
 
-kernel_setup() = KernelAbstractions.CPU(), 1
+kernel_setup() = KernelAbstractions.CPU(; static=true), 64
 
 """
     mapstencil!(f, dest::AbstractArray, source::StencilArray, args::AbstractArray...)
