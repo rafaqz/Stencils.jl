@@ -1,9 +1,7 @@
 """
     Layered <: Abstract
 
-    Layered(layers::Union{Stencil,Layered}...)
-    Layered(; layer_keywords...)
-    Layered(layers::Union{Tuple,NamedTuple})
+    Layered(layers::...)
 
 `Tuple` or `NamedTuple` of stencils that can be used together.
 
@@ -20,7 +18,6 @@ Layered{R,N,L}(layers) where {R,N,L} = Layered{R,N,L,eltype(first(layers))}(laye
 const StencilOrLayered = Union{Stencil,Layered}
 
 Layered(layers::StencilOrLayered...) = Layered(layers)
-Layered(; kw...) = Layered(values(kw))
 function Layered(layers::Union{NamedTuple,Tuple})
     N = ndimensions(first(layers))
     R = maximum(map(radius, layers))
@@ -28,14 +25,7 @@ function Layered(layers::Union{NamedTuple,Tuple})
     Layered{R,N,L}(layers)
 end
 
-Base.length(l::Layered) = map(length, layers(l))
-Base.getproperty(l::Layered, x::Symbol) = Base.getproperty(layers(l), x::Symbol)
-Base.getindex(l::Layered, x::Int) = Base.getindex(layers(l), x)
-Base.getindex(l::Layered, x::Symbol) = Base.getindex(layers(l), x)
-Base.getindex(l::Layered, x::Tuple) = Base.getindex(layers(l), x)
-Base.map(f, stencil::Layered) = map(f, layers(stencil))
-
-layers(stencil::Layered) = Base.getfield(stencil, :layers)
+layers(stencil::Layered) = stencil.layers
 @inline offsets(::Type{<:Layered{R,N,L,T,La}}) where {R,N,L,T,La} =
     map(p -> offsets(p), tuple_contents(La))
 
@@ -51,5 +41,5 @@ radius(layered::Layered{R}) where R = R
 ndimensions(layered::Layered{<:Any,N}) where N = N
 indices(layered::Layered, I) = map(l -> indices(l, I), layered)
 
-_zero_values(::Type{T}, l::Layered) where T =
-    map(l -> _zero_values(T, l), layers(l))
+Base.map(f, stencil::Layered) = map(f, layers(stencil))
+
