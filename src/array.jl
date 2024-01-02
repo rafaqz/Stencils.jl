@@ -276,20 +276,63 @@ radii(x::Tuple, s::Tuple) = x
 
 # Base methods
 function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
-    pad_axes = map(ax -> ax .+ R, axes(A))
-    copyto!(parent(source(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    pad_axes = add_halo(S, axes(S))
+    copyto!(parent(parent(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
     return
 end
 function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
-    pad_axes = map(ax -> ax .+ R, axes(A))
-    copyto!(A, CartesianIndices(A), parent(source(S)), CartesianIndices(pad_axes))
+    pad_axes = add_halo(S, axes(S))
+    copyto!(A, CartesianIndices(A), parent(S), CartesianIndices(pad_axes))
     return A
 end
 function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArray{<:Any,RS}) where {RD,RS}
-    dst_axes = map(s -> RD:s + RD, size(dst))
-    src_axes = map(s -> RS:s + RS, size(src))
-    copyto!(parent(source(dst)), CartesianIndices(dst_axes),
-            parent(source(src)), CartesianIndices(src_axes)
+    dst_axes = add_halo(dst, axes(dst))
+    src_axes = add_halo(src, axes(src))
+    copyto!(
+        parent(dst), CartesianIndices(dst_axes),
+        parent(src), CartesianIndices(src_axes)
+    )
+    return dst
+end
+
+function Base.copyto!(dst::AbstractStencilArray, idst::CartesianIndices, src::AbstractStencilArray, isrc::CartesianIndices)
+    dst_axes = add_halo(dst, idst)
+    src_axes = add_halo(src, isrc)
+    copyto!(parent(dst), dst_axes, parent(src), src_axes)
+    return dst
+end
+function Base.copyto!(dst::AbstractArray, idst::CartesianIndices, src::AbstractStencilArray, isrc::CartesianIndices)
+    src_axes = add_halo(src, isrc)
+    copyto!(dst, idst, parent(src), src_axes)
+    return dst
+end
+function Base.copyto!(dst::AbstractStencilArray, idst::CartesianIndices, src::AbstractArray, isrc::CartesianIndices)
+    dst_axes = add_halo(dst, idst)
+    copyto!(parent(dst), dst_axes, src, isrc)
+    return dst
+end
+function Base.copyto!(dst::AbstractStencilArray, src::AbstractStencilArray)
+    dst_axes = add_halo(dst, axes(dst))
+    src_axes = add_halo(src, axes(src))
+    copyto!(
+        parent(dst), CartesianIndices(dst_axes), 
+        parent(src), CartesianIndices(src_axes),
+    )
+    return dst
+end
+function Base.copyto!(dst::AbstractArray, src::AbstractStencilArray)
+    src_axes = add_halo(src, axes(src))
+    copyto!(
+        dst, CartesianIndices(dst),
+        parent(src), CartesianIndices(src_axes),
+    )
+    return dst
+end
+function Base.copyto!(dst::AbstractStencilArray, src::AbstractArray)
+    dst_axes = add_halo(dst, axes(dst))
+    copyto!(
+        parent(dst), CartesianIndices(dst_axes),
+        src, CartesianIndices(src),
     )
     return dst
 end
@@ -345,7 +388,17 @@ function unsafe_setindex!(A::AbstractStencilArray, ::Padding, x, I...)
     @inbounds setindex!(parent(A), x, I...)
 end
 
-add_halo(::AbstractStencilArray{<:Any,R}, I) where R = map(i -> i + R, I)
+add_halo(A::AbstractStencilArray, I) = add_halo(padding(A), A, I)
+add_halo(::Halo, A::AbstractStencilArray, I) = _add_halo(A, I)
+add_halo(::Padding, A::AbstractStencilArray, I) = I
+
+_add_halo(A::AbstractStencilArray, I::Tuple) = map(i -> _add_halo(A, i), I) 
+_add_halo(::AbstractStencilArray{<:Any,R}, I::Integer) where R = I + R
+_add_halo(::AbstractStencilArray{<:Any,R}, I::AbstractUnitRange) where R = I .+ R
+_add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndices{N}) where {R,N} =
+    CartesianIndex(ntuple(_ -> R, Val(N))) .+ I
+_add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndex{N}) where {R,N} =
+    CartesianIndex(ntuple(_ -> R, Val(N))) + I
 
 Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
 

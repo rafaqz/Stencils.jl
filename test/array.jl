@@ -125,3 +125,15 @@ end
     @test Stencils.inner_axes(A, VonNeumann(1)) == (2:5, 2:6)
 end
 
+@testset "broadcast and copyto!" begin
+    A = zeros(6, 7)
+    S = StencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    A .= S
+    @test A == S
+    S .= zeros(6, 7)
+    @test S == zeros(6, 7)
+    S2 = StencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    S .= S2
+    @test S == S2
+end
+
