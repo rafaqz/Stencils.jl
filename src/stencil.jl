@@ -33,6 +33,7 @@ Return the radius of a stencil.
 """
 function radius end
 radius(hood::Stencil{R}) where R = R
+radius(::Tuple{}) = 0
 
 """
     diameter(rule) -> Int
