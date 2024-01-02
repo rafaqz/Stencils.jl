@@ -6,7 +6,7 @@ if VERSION >= v"1.9.0"
     @testset "Aqua.jl" begin
         Aqua.test_all(
             Stencils;
-            ambiguities=(exclude=[Base.copy!],),
+            ambiguities=(exclude=[Base.copy!, Base.copyto!],),
             unbound_args=true,
             undefined_exports=true,
             project_extras=true,
