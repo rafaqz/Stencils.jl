@@ -202,6 +202,33 @@ CUDA.@time mapstencil(mean, A);
 # Or 216.0 μs
 ```
 
+### Example: convolution
+Stencels can also be used to convolve a Kernel with each stencil of a StencilArrray using `mapstencil` and `kernelproduct`:
+
+```julia
+using Stencils
+
+# Define a random array that the kernel will be convolved with
+r = rand(1000, 1000)
+
+# Define kernel array
+sharpen = [0 -1 0;
+           -1 5 -1;
+           0 -1 0]
+
+# Define a stencil that is the same size as the kernel array
+stencil = Window(1)
+
+# Create a stencil Kernel from the stencil and the kernel array
+k = Kernel(stencil, sharpen)
+
+# Wrap the random array and the Kernel in a StencilArray
+A = StencilArray(r, k)
+
+# use `mapstencil` with the `kernelproduct` funciton to convolve the Kernel with array
+mapstencil(kernelproduct, A) 
+```
+
 Or 
 
 Stencils can be used standalone, outside of `mapstencil`. For example
