@@ -99,3 +99,9 @@ end
 # and we can optimise parameters stored in a functor or anonymous function
 ConstructionBase.constructorof(::Type{<:Kernel}) = Kernel
 
+# In case the kernel is an Array, we need to `adapt` it for GPUs
+function Adapt.adapt_structure(to, s::Kernel{R,N,L,T,F,H,K}) where {R,N,L,T,F,H,K}
+    newstencil = Adapt.adapt(to, s.stencil)
+    newkernel = Adapt.adapt(to, s.kernel)
+    return Kernel{R,N,L,T,F,typeof(newstencil),typeof(newkernel)}(s.f, newstencil, newkernel)
+end

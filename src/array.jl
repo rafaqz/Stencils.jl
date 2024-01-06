@@ -495,7 +495,8 @@ _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 
 
 function Adapt.adapt_structure(to, A::StencilArray{S}) where S
     newparent = Adapt.adapt(to, parent(A))
-    StencilArray{S}(newparent, stencil(A), boundary(A), padding(A))
+    newstencil = Adapt.adapt(to, stencil(A))
+    StencilArray{S}(newparent, newstencil, boundary(A), padding(A))
 end
 
 ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray{S}
