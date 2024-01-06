@@ -226,7 +226,7 @@ k = Kernel(stencil, sharpen)
 A = StencilArray(r, k)
 
 # use `mapstencil` with the `kernelproduct` function to convolve the Kernel with array. 
-# Note: Base.dot product could also be used as input to `mapstencil`, but `kernelproduct` 
+# Note: `Base.dot` product could also be used as input to `mapstencil`, but `kernelproduct` 
 # lets you use an array of StaticArray and it will still work (dot is recursive)
 mapstencil(kernelproduct, A) 
 ```
