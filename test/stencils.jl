@@ -102,7 +102,7 @@ end
            0 0 1 0 1
            1 0 1 0 1]
 
-    h1 = NamedStencil(n=(-1, 0), w=(0, -1), s=(1, 0), e=(0, 1))
+    h1 = NamedStencil(n=(-1, 0), e=(0, -1), w=(1, 0), s=(0, 1))
     @test isbits(h1)
     @test radius(h1) == 1
     @test length(h1) == 4
@@ -110,10 +110,10 @@ end
     @test neighbors(res1) === SVector(1, 0, 1, 1)
     @test sum(res1) == 3
     @test res1.n == 1
-    @test res1.w == 0
+    @test res1.e == 0
 
     @test mapstencil(StencilArray(win, h1)) do s
-        s.n + s.s
+        s.n + s.w
     end == [
         0 0 1 0 0
         0 1 0 1 2
@@ -121,6 +121,9 @@ end
         1 0 1 1 2
         0 0 1 0 1
     ]
+    # Shorthand syntax for naming another stencil
+    @test h1 == NamedStencil{(:n,:e,:w,:s)}(VonNeumann())
+    @test_throws ArgumentError NamedStencil{(:n,:s)}(VonNeumann())
 end
 
 @testset "Layered" begin
