@@ -1,6 +1,6 @@
-The Neighborhoods.jl package is licensed under the MIT "Expat" License:
+The Stencils.jl package is licensed under the MIT "Expat" License:
 
-> Copyright (c) 2018: Rafael Schouten.
+> Copyright (c) 2023: Rafael Schouten.
 >
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
