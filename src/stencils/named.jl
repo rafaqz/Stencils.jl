@@ -30,6 +30,12 @@ julia> stencil(A, (5, 5)).east # we can access values by name
 julia> mapstencil(s -> s.east + s.west, A); # and use them in `mapstencil` functions
 ```
 
+We can also take some shortcuts, and just name an existing stencil:
+
+```julia
+julia> ns = NamedStencil{(:w,:n,:s,:e)}(VonNeumann(1)) 
+```
+
 The stencil radius is calculated from the most distant coordinate,
 and the dimensionality `N` of the stencil is taken from the length of
 the first coordinate, e.g. `1`, `2` or `3`.
@@ -59,6 +65,7 @@ NamedStencil{K}(offsets::Tuple) where K = NamedStencil{K,offsets}()
 NamedStencil{K}(offsets::AbstractArray) where K = NamedStencil{K,Tuple(offsets)}()
 NamedStencil{K}(offsets::StaticArray) where K = NamedStencil{K,Tuple(offsets)}()
 NamedStencil{K}(offsets::Base.Generator) where K = NamedStencil{K,Tuple(offsets)}()
+NamedStencil{K}(stencil::Stencil) where K = NamedStencil{K,Tuple(offsets(stencil))}()
 
 Base.getproperty(a::NamedStencil{K}, x::Symbol) where K = getproperty(NamedTuple{K}(values(a)), x)
 Base.getindex(a::NamedStencil, x::Symbol) = getproperty(a, x)
