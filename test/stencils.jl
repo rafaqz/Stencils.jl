@@ -1,4 +1,4 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, BenchmarkTools
+using Stencils, Test, LinearAlgebra, StaticArrays, BenchmarkTools, Adapt
 
 init = [0 0 0 1 1 1
         1 0 1 1 0 1
@@ -175,5 +175,12 @@ end
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))
         k = Stencils.rebuild(Kernel(hood, 1:4), vals)
         @test kernelproduct(k) === 1 * 2 + 2 * 4 + 3 * 6 + 4 * 8 === 60
+    end
+    @testset "Adapt" begin
+        kern = collect(1:9)
+        st = Kernel(Window{1}(), kern)
+        # Adapt to a SVector, which will be `isbits`
+        @test !isbits(st)
+        @test isbits(Adapt.adapt(SVector{9}, st))
     end
 end
