@@ -19,6 +19,9 @@ abstract type Stencil{R,N,L,T} <: StaticVector{L,T} end
 ConstructionBase.constructorof(::Type{<:T}) where T <: Stencil{R,N,L} where {R,N,L} =
     T.name.wrapper{R,N,L}
 
+# Usually stencils are isbits so we don't do anything on `adapt`
+Adapt.adapt_structure(to, s::Stencil) = s
+
 Base.@assume_effects :foldable StaticArraysCore.Size(::Type{T}) where {T<:Stencil{<:Any,<:Any}} = 
     StaticArrays.Size{(length(offsets(T)),)}()
 StaticArraysCore.Size(::Type{T}) where {T<:Stencil{<:Any,<:Any,L}} where L =
