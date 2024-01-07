@@ -58,7 +58,7 @@ function mapstencil!(
     _checksizes((dest, source, args...))
     update_boundary!(source)
 
-    device = KernelAbstractions.get_backend(parent(source))
+    backend = KernelAbstractions.get_backend(parent(source))
     workgroups = 64 # 64 seems like a sweet spot for both CPU and GPU ?
     sz = tuple_contents(S)
 
@@ -67,15 +67,15 @@ function mapstencil!(
     if length(args) == 0
         # We use a static kernel size. We have the size
         # in the type so we may as well use it.
-        kernel! = mapstencil_kerneln0!(device, workgroups, sz)
+        kernel! = mapstencil_kerneln0!(backend, workgroups, sz)
     elseif length(args) == 1
-        kernel! = mapstencil_kerneln1!(device, workgroups, sz)
+        kernel! = mapstencil_kerneln1!(backend, workgroups, sz)
     elseif length(args) == 2
-        kernel! = mapstencil_kerneln2!(device, workgroups, sz)
+        kernel! = mapstencil_kerneln2!(backend, workgroups, sz)
     elseif length(args) == 3
-        kernel! = mapstencil_kerneln3!(device, workgroups, sz)
+        kernel! = mapstencil_kerneln3!(backend, workgroups, sz)
     elseif length(args) == 4
-        kernel! = mapstencil_kerneln4!(device, workgroups, sz)
+        kernel! = mapstencil_kerneln4!(backend, workgroups, sz)
     end
 
     kernel!(f, dest, source, args...)
