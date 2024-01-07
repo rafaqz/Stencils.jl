@@ -80,6 +80,8 @@ function mapstencil!(
 
     kernel!(f, dest, source, args...)
 
+    KernelAbstractions.synchronize(backend)
+
     return dest
 end
 
