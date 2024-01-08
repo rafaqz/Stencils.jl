@@ -64,12 +64,12 @@ Get stencil neighbors from `A` around center `I` as an `SVector`.
 @inline neighbors(A::AbstractStencilArray, I::NTuple{<:Any,Int}) = neighbors(A, I...)
 @inline neighbors(A::AbstractStencilArray, I::Int...) = neighbors(A, CartesianIndex(I))
 @inline neighbors(A::AbstractStencilArray, I::CartesianIndex) = neighbors(stencil(A), A, I)
-@inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
+@inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex)
     _checkbounds(padding(A), A, I)
     return @inbounds unsafe_neighbors(stencil, A, I)
 end
 
-function _checkbounds(::Halo, A, I)
+function _checkbounds(::Halo, A::AbstractStencilArray{<:Any,R,<:Any,N}, I) where {R,N}
     # Check the corners of the array
     checkbounds(parent(A), I)
     checkbounds(parent(A), I + CartesianIndex(ntuple(_ -> 2R, N)))
