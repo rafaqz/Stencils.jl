@@ -13,7 +13,7 @@ one for each dimension.
 struct Rectangle{O,R,N,L,T} <: Stencil{R,N,L,T}
     neighbors::SVector{L,T}
     function Rectangle{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} 
-        @assert all(map(o -> length(o) == N, O)) "All offsets must be the length `N` of $N, got $O" 
+        @assert all(map(o -> length(o) == 2, O)) "All offset tuples must be the length `2`, got $O" 
         new{O,R,N,L,T}(neighbors)
     end
 end
