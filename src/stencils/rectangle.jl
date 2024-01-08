@@ -32,7 +32,7 @@ end
 Rectangle(os1::AxisOffsets, offsets::AxisOffsets...) = Rectangle((os1, offsets...))
 Rectangle(offsets::CustomOffsets) = Rectangle{offsets}()
 
-offsets(::Type{<:Rectangle{O,R,N,L}}) where {O,R,N,L} =
+Base.@assume_effects :foldable offsets(::Type{<:Rectangle{O,R,N,L}}) where {O,R,N,L} =
     SVector{L}(map(Tuple, CartesianIndices(map(splat(:), O))))
 
 function ConstructionBase.constructorof(::Type{Rectangle{O,R,N,L,T}}) where {O,R,N,L,T}
