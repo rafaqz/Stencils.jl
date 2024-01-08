@@ -39,7 +39,7 @@ with the assumption that `I` is inbounds.
 @inline unsafe_stencil(A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_stencil(stencil(A), A, I)
 @inline unsafe_stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    stencil(hood, unsafe_neighbors(hood, A, I))
+    rebuild(hood, unsafe_neighbors(hood, A, I))
 
 """
     boundary(A::AbstractStencilArray)
@@ -65,11 +65,18 @@ Get stencil neighbors from `A` around center `I` as an `SVector`.
 @inline neighbors(A::AbstractStencilArray, I::Int...) = neighbors(A, CartesianIndex(I))
 @inline neighbors(A::AbstractStencilArray, I::CartesianIndex) = neighbors(stencil(A), A, I)
 @inline function neighbors(stencil::StencilOrLayered, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex) where {R,N}
-    if padding(A) isa Halo  # Conditional Remove has checks internally
-        checkbounds(parent(A), I)
-        checkbounds(parent(A), I + CartesianIndex(ntuple(_ -> 2R, N)))
-    end
+    _checkbounds(padding(A), A, I)
     return @inbounds unsafe_neighbors(stencil, A, I)
+end
+
+function _checkbounds(::Halo, A, I)
+    # Check the corners of the array
+    checkbounds(parent(A), I)
+    checkbounds(parent(A), I + CartesianIndex(ntuple(_ -> 2R, N)))
+end
+function _checkbounds(::Conditional, A, I)
+    # Check the center, we handle the padding later
+    checkbounds(parent(A), I)
 end
 
 """

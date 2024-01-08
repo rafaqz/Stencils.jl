@@ -95,6 +95,30 @@ end
     @test sum(res2) == 0
 end
 
+@testset "Rectangle" begin
+    win = [0 1 0 0 1
+           0 0 1 0 0
+           0 0 0 1 1
+           0 0 1 0 1
+           1 0 1 0 1]
+    h1 = Rectangle(((-1, 0), (-2, 1)))
+    @test isbits(h1)
+    @test radius(h1) == 2
+    @test length(h1) == 8
+    res1 = stencil(StencilArray(win, h1), (3, 3)) 
+    @test neighbors(res1) == SVector(0, 0, 0, 0, 1, 0, 0, 1)
+    @test sum(res1) == 2
+
+    win3 = cat(win, win, win; dims=3)
+    h3 = Rectangle{((-1, 0), (0, 1), (1, 1))}()
+    @test radius(h3) == 1
+    @test length(h3) == 2 * 2 * 1
+    A = StencilArray(win3, h3)
+    res3 = stencil(A, (2, 2, 1)) 
+    @test neighbors(res3) == SVector(1, 0, 0, 1)
+    @test sum(res3) == 2
+end
+
 @testset "NamedStencil" begin
     win = [0 1 0 0 1
            0 0 1 0 0
