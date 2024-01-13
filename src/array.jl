@@ -190,7 +190,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
     return A
 end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{Y,X},R} where {Y,X}
-    src = parent(parent(A))
+    src = parent(A)
     n_xs, n_ys = X, Y
     startpad_x = startpad_y = 1:R
     endpad_x = n_xs+R+1:n_xs+2R
@@ -223,7 +223,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
     return after_update_boundary!(A)
 end
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
-    src = parent(parent(A))
+    src = parent(A)
     n_xs, n_ys, n_zs = X, Y, Z
     startpad_x = startpad_y = startpad_z = 1:R
     endpad_x = n_xs+R+1:n_xs+2R
@@ -277,7 +277,7 @@ radii(x::Tuple, s::Tuple) = x
 # Base methods
 function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
     pad_axes = add_halo(S, axes(S))
-    copyto!(parent(parent(S)), CartesianIndices(pad_axes), A, CartesianIndices(A))
+    copyto!(parent(S), CartesianIndices(pad_axes), A, CartesianIndices(A))
     return
 end
 function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
@@ -402,11 +402,11 @@ _add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndex{N}) where {R,N} =
 
 Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
 
-Base.similar(A::AbstractStencilArray) = similar(parent(parent(A)), size(A))
-Base.similar(A::AbstractStencilArray, ::Type{T}) where T = similar(parent(parent(A)), T, size(A))
-Base.similar(A::AbstractStencilArray, I::Tuple{Int,Vararg{Int}}) = similar(parent(parent(A)), I)
+Base.similar(A::AbstractStencilArray) = similar(parent(A), size(A))
+Base.similar(A::AbstractStencilArray, ::Type{T}) where T = similar(parent(A), T, size(A))
+Base.similar(A::AbstractStencilArray, I::Tuple{Int,Vararg{Int}}) = similar(parent(A), I)
 Base.similar(A::AbstractStencilArray, ::Type{T}, I::Tuple{Int,Vararg{Int}}) where T =
-    similar(parent(parent(A)), T, I)
+    similar(parent(A), T, I)
 
 
 const STENCILARRAY_KEYWORDS = """
