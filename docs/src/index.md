@@ -23,6 +23,7 @@ Horizontal
 Layered
 Moore
 Positional
+Rectangle
 Vertical
 VonNeumann
 Window
