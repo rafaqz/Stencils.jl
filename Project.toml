@@ -20,6 +20,7 @@ Aqua = "0.8"
 BenchmarkTools = "1"
 ConstructionBase = "1"
 Dates = "0.1, 1"
+DimensionalData = "0.25"
 KernelAbstractions = "0.9"
 LinearAlgebra = "0.1, 1"
 Random = "1"
@@ -35,6 +36,7 @@ julia = "1.6"
 [extras]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
@@ -42,4 +44,4 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [targets]
-test = ["Aqua", "BenchmarkTools", "SafeTestsets", "Statistics", "Test", "Unitful"]
+test = ["Aqua", "BenchmarkTools", "DimensionalData", "SafeTestsets", "Statistics", "Test", "Unitful"]

@@ -13,18 +13,25 @@ The result is returned as a new array.
 """
 function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
     _checksizes((source, args...))
-    # Get the type of the stencil
-    bc = boundary(source)
-    T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
-    emptyneighbors = _zero_values(T1, stencil(source))
-    H = typeof(rebuild(stencil(source), emptyneighbors))
-    # Use nasty broadcast mechanism `_return_type` to get the new eltype
-    T_return = Base._return_type(f, Tuple{H,map(eltype, args)...})
+    T_return = _return_type(f, source, args...)
     dest = similar(parent(source), T_return, size(source))
-    mapstencil!(f, dest, source, args...)
+    return mapstencil!(f, dest, source, args...)
 end
-mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...) =
-    mapstencil(f, StencilArray(A, hood; kw...), args...)
+function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...)
+    sa = StencilArray(A, Window(1))
+    T_return = _return_type(f, sa, args...)
+    return mapstencil!(f, similar(A, T_return), sa, args...)
+end
+
+function _return_type(f, A::AbstractStencilArray{<:Any,<:Any,T}, args...) where T
+    st = stencil(A)
+    bc = boundary(A)
+    T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
+    emptyneighbors = _zero_values(T1, st)
+    H = typeof(rebuild(st, emptyneighbors))
+    # Use nasty broadcast mechanism `_return_type` to get the new eltype
+    return Base._return_type(f, Tuple{H,map(eltype, args)...})
+end
 
 _zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
 

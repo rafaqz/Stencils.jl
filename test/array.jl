@@ -1,4 +1,4 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, Statistics
+using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
 
 @testset "StencilArray" begin
 
@@ -115,6 +115,14 @@ end
     parent(A)
     parent(B)
     parent(C)
+
+
+    @testset "Wrapper array types propagate" begin
+        A = DimArray(r, (X, Y))
+        res = mapstencil(sum, Window(1), A)
+        @test res isa DimArray
+        @test dims(A) === dims(res)
+    end
 end
 
 @testset "pad/unpad axes" begin
@@ -136,4 +144,3 @@ end
     S .= S2
     @test S == S2
 end
-
