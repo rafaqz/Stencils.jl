@@ -493,6 +493,17 @@ end
 _size(::Conditional, stencil, parent) = size(parent)
 _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
 
+"""Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables."""
+function _similar(src::StencilArray{S,R}) where {S,R}
+    return StencilArray{S,R}(similar(parent(src)),stencil(src),boundary(src), padding(src))
+end
+
+function Base.copy(src::StencilArray)
+    cp = _similar(src)
+    copyto!(parent(cp), parent(src)) #copy parent array to make sure that padding is also copied
+    return cp
+end
+
 function Adapt.adapt_structure(to, A::StencilArray{S}) where S
     newparent = Adapt.adapt(to, parent(A))
     newstencil = Adapt.adapt(to, stencil(A))
