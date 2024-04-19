@@ -611,6 +611,16 @@ switch(A::SwitchingStencilArray{S}) where S =
 
 Base.parent(A::SwitchingStencilArray) = A.source
 
+_similar(src::SwitchingStencilArray{S}) where {S} =
+    SwitchingStencilArray{S}(similar(source(src)),similar(dest(src)),stencil(src),boundary(src), padding(src))
+
+function Base.copy(src::SwitchingStencilArray)
+    cp = _similar(src)
+    copyto!(source(cp), source(src))
+    copyto!(dest(cp), dest(src))
+    return cp
+end
+
 function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
     newsource = Adapt.adapt(to, A.source)
     newdest = Adapt.adapt(to, A.dest)

@@ -150,9 +150,18 @@ end
     S .= S2
     @test S == S2
 end
-
+##
 @testset "copy" begin
+    S = StencilArray(ones(6, 7), Moore{1,2}());
+    Scopy = copy(S)
+    @test S == Scopy
+
     S = StencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
     Scopy = copy(S)
     @test S == Scopy
+
+    S = SwitchingStencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    Scopy = copy(S)
+    @test S == Scopy
+    
 end
