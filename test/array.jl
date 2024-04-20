@@ -28,9 +28,9 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(C) === (80, 80)
         @test size(parent(C)) === (100, 100)
         @test axes(parent(C)) === (Base.OneTo(1:100), Base.OneTo(1:100))
-        @test typeof(similar(A)) == Matrix{Float64}
-        @test typeof(similar(B)) == Matrix{Float64}
-        @test typeof(similar(C)) == Matrix{Float64}
+        @test typeof(similar(A)) == typeof(A)
+        @test typeof(similar(B)) == typeof(B)
+        @test typeof(similar(C)) == typeof(C)
         @test size(similar(A)) == size(A)
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)

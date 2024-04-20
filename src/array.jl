@@ -493,13 +493,13 @@ end
 _size(::Conditional, stencil, parent) = size(parent)
 _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
 
-"""Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables."""
-function _similar(src::StencilArray{S,R}) where {S,R}
+#Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables.
+function Base.similar(src::StencilArray{S,R}) where {S,R}
     return StencilArray{S,R}(similar(parent(src)),stencil(src),boundary(src), padding(src))
 end
 
 function Base.copy(src::StencilArray)
-    cp = _similar(src)
+    cp = similar(src)
     copyto!(parent(cp), parent(src)) #copy parent array to make sure that padding is also copied
     return cp
 end
@@ -611,11 +611,11 @@ switch(A::SwitchingStencilArray{S}) where S =
 
 Base.parent(A::SwitchingStencilArray) = A.source
 
-_similar(src::SwitchingStencilArray{S}) where {S} =
+Base.similar(src::SwitchingStencilArray{S}) where {S} =
     SwitchingStencilArray{S}(similar(source(src)),similar(dest(src)),stencil(src),boundary(src), padding(src))
 
 function Base.copy(src::SwitchingStencilArray)
-    cp = _similar(src)
+    cp = similar(src)
     copyto!(source(cp), source(src))
     copyto!(dest(cp), dest(src))
     return cp
