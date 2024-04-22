@@ -498,6 +498,17 @@ function Base.similar(src::StencilArray{S,R}) where {S,R}
     return StencilArray{S,R}(similar(parent(src)),stencil(src),boundary(src), padding(src))
 end
 
+function Base.similar(src::StencilArray{S,R},::Type{T},dims::Tuple{Int,Vararg{Int}}) where {S,R,T}
+    old_dims = size(src)
+    halo_dims = size(parent(src)) .- old_dims
+    new_dims = dims .+ halo_dims
+    # @info "" new_dims halo_dims dims size(similar(parent(src),T,new_dims))
+    return StencilArray{dims,R}(similar(parent(src),T,new_dims),stencil(src),boundary(src), padding(src))
+end
+
+Base.similar(src::StencilArray{S,R,T},dims::Tuple{Int,Vararg{Int}}) where {S,R,T} = similar(src, T, dims)
+Base.similar(src::StencilArray{S,R},::Type{T}) where {S,R,T} = similar(src, T, size(src))
+
 function Base.copy(src::StencilArray)
     cp = similar(src)
     copyto!(parent(cp), parent(src)) #copy parent array to make sure that padding is also copied

@@ -12,6 +12,16 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(parent(B)) == (120,)
         @test size(C) == (80,)
         @test size(parent(C)) == (100,)
+        
+        @test size(similar(A)) == (100,)
+        @test size(similar(B)) == (100,)
+        @test size(similar(C,Int)) == (80,)
+
+        @test size(similar(B,40)) == (40,)
+        @test size(parent(similar(B,Int,20))) == (40,)
+
+        @test eltype(similar(B,Int,20)) == Int
+
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
         D .= 0.0
         @test all(==(0.0), D)
@@ -34,6 +44,9 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(similar(A)) == size(A)
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)
+        @test size(similar(A,40,40)) == (40,40)
+        @test size(similar(B,40,40)) == (40,40)
+        @test eltype(similar(B,Int,20,20)) == Int
         A .= 0
         B .= 0
         C .= 0
@@ -59,6 +72,8 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(parent(B)) == (120, 120, 120)
         @test size(C) == (80, 80, 80)
         @test size(parent(C)) == (100, 100, 100)
+        @test size(similar(B)) == size(B)
+        @test size(similar(B,(30,30,30))) == ((30,30,30))
         D = StencilArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary=Wrap());
         D .= 0.0
         @test all(==(0.0), D)
