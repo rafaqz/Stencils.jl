@@ -21,13 +21,13 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(similar(S)) == (100,)
         @test size(similar(C,Int)) == (80,)
 
-        @test size(similar(B,40)) == (40,)
-        @test size(similar(S,40)) == (40,)
-        @test size(similar(S,Int,40)) == (40,)
-        @test size(parent(similar(B,Int,20))) == (40,)
+        @test size(similar(B, 40)) == (40,)
+        @test size(similar(S, 40)) == (40,)
+        @test size(similar(S, Int, 40)) == (40,)
+        @test size(parent(similar(B, Int, 20))) == (40,)
         
-        @test eltype(similar(S,Bool,20)) == Bool
-        @test eltype(similar(B,Int,20)) == Int
+        @test eltype(similar(S, Bool, 20)) == Bool
+        @test eltype(similar(B, Int, 20)) == Int
 
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
         D .= 0.0
@@ -53,9 +53,9 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)
         @test size(similar(S)) == size(S)
-        @test size(similar(A,40,40)) == (40,40)
-        @test size(similar(B,40,40)) == (40,40)
-        @test eltype(similar(B,Int,20,20)) == Int
+        @test size(similar(A, 40, 40)) == (40,40)
+        @test size(similar(B, 40, 40)) == (40,40)
+        @test eltype(similar(B, Int, 20, 20)) == Int
         A .= 0
         B .= 0
         C .= 0
