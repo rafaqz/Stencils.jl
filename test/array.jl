@@ -7,11 +7,28 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(r, VonNeumann{3,1}(); padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Wrap());
+
+        S = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Wrap());
+
         @test size(A) == size(parent(A)) == (100,)
         @test size(B) == (100,)
         @test size(parent(B)) == (120,)
         @test size(C) == (80,)
         @test size(parent(C)) == (100,)
+        
+        @test size(similar(A)) == (100,)
+        @test size(similar(B)) == (100,)
+        @test size(similar(S)) == (100,)
+        @test size(similar(C,Int)) == (80,)
+
+        @test size(similar(B, 40)) == (40,)
+        @test size(similar(S, 40)) == (40,)
+        @test size(similar(S, Int, 40)) == (40,)
+        @test size(parent(similar(B, Int, 20))) == (40,)
+        
+        @test eltype(similar(S, Bool, 20)) == Bool
+        @test eltype(similar(B, Int, 20)) == Int
+
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
         D .= 0.0
         @test all(==(0.0), D)
@@ -21,6 +38,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary=Remove(0.0));
+        S = SwitchingStencilArray(r, Window{10}(); padding=Halo{:out}(), boundary=Wrap());
         @test size(A) == size(parent(A)) == (100, 100)
         @test size(B) == (100, 100)
         @test size(parent(B)) === (120, 120)
@@ -28,12 +46,16 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(C) === (80, 80)
         @test size(parent(C)) === (100, 100)
         @test axes(parent(C)) === (Base.OneTo(1:100), Base.OneTo(1:100))
-        @test typeof(similar(A)) == Matrix{Float64}
-        @test typeof(similar(B)) == Matrix{Float64}
-        @test typeof(similar(C)) == Matrix{Float64}
+        @test typeof(similar(A)) == typeof(A)
+        @test typeof(similar(B)) == typeof(B)
+        @test typeof(similar(C)) == typeof(C)
         @test size(similar(A)) == size(A)
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)
+        @test size(similar(S)) == size(S)
+        @test size(similar(A, 40, 40)) == (40,40)
+        @test size(similar(B, 40, 40)) == (40,40)
+        @test eltype(similar(B, Int, 20, 20)) == Int
         A .= 0
         B .= 0
         C .= 0
@@ -59,6 +81,8 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(parent(B)) == (120, 120, 120)
         @test size(C) == (80, 80, 80)
         @test size(parent(C)) == (100, 100, 100)
+        @test size(similar(B)) == size(B)
+        @test size(similar(B,(30,30,30))) == ((30,30,30))
         D = StencilArray(r, Moore{10,3}(); padding=Halo{:in}(), boundary=Wrap());
         D .= 0.0
         @test all(==(0.0), D)
@@ -149,4 +173,19 @@ end
     S2 = StencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
     S .= S2
     @test S == S2
+end
+##
+@testset "copy" begin
+    S = StencilArray(ones(6, 7), Moore{1,2}());
+    Scopy = copy(S)
+    @test S == Scopy
+
+    S = StencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    Scopy = copy(S)
+    @test S == Scopy
+
+    S = SwitchingStencilArray(ones(6, 7), Moore{1,2}(); padding=Halo{:out}(), boundary=Wrap());
+    Scopy = copy(S)
+    @test S == Scopy
+    
 end

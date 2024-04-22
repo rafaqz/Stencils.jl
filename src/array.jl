@@ -493,6 +493,26 @@ end
 _size(::Conditional, stencil, parent) = size(parent)
 _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
 
+#Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables.
+function Base.similar(src::StencilArray{S,R}) where {S,R}
+    return StencilArray{S,R}(similar(parent(src)), stencil(src), boundary(src), padding(src))
+end
+function Base.similar(src::StencilArray{S,R}, ::Type{T}, dims::Tuple{Int,Vararg{Int}}) where {S,R,T}
+    old_dims = size(src)
+    halo_dims = size(parent(src)) .- old_dims
+    new_dims = dims .+ halo_dims
+    # @info "" new_dims halo_dims dims size(similar(parent(src),T,new_dims))
+    return StencilArray{dims,R}(similar(parent(src), T, new_dims), stencil(src), boundary(src), padding(src))
+end
+Base.similar(src::StencilArray{S,R,T}, dims::Tuple{Int,Vararg{Int}}) where {S,R,T} = similar(src, T, dims)
+Base.similar(src::StencilArray{S,R}, ::Type{T}) where {S,R,T} = similar(src, T, size(src))
+
+function Base.copy(src::StencilArray)
+    cp = similar(src)
+    copyto!(parent(cp), parent(src)) #copy parent array to make sure that padding is also copied
+    return cp
+end
+
 function Adapt.adapt_structure(to, A::StencilArray{S}) where S
     newparent = Adapt.adapt(to, parent(A))
     newstencil = Adapt.adapt(to, stencil(A))
@@ -599,6 +619,25 @@ switch(A::SwitchingStencilArray{S}) where S =
     SwitchingStencilArray{S}(dest(A), source(A), stencil(A), boundary(A), padding(A))
 
 Base.parent(A::SwitchingStencilArray) = A.source
+
+Base.similar(src::SwitchingStencilArray{S}) where {S} =
+    SwitchingStencilArray{S}(similar(source(src)),similar(dest(src)),stencil(src),boundary(src), padding(src))
+function Base.similar(src::SwitchingStencilArray{S}, ::Type{T}, dims::Tuple{Int,Vararg{Int}}) where {S,T}
+    old_dims = size(src)
+    halo_dims = size(parent(src)) .- old_dims
+    new_dims = dims .+ halo_dims
+    return SwitchingStencilArray{dims}(similar(source(src), T, new_dims),similar(dest(src), T, new_dims),stencil(src), boundary(src), padding(src))
+end
+
+Base.similar(src::SwitchingStencilArray{S,T}, dims::Tuple{Int,Vararg{Int}}) where {S,T} = similar(src, T, dims)
+Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} = similar(src, T, size(src))
+
+function Base.copy(src::SwitchingStencilArray)
+    cp = similar(src)
+    copyto!(source(cp), source(src))
+    copyto!(dest(cp), dest(src))
+    return cp
+end
 
 function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
     newsource = Adapt.adapt(to, A.source)
