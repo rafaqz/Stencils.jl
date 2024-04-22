@@ -623,6 +623,16 @@ Base.parent(A::SwitchingStencilArray) = A.source
 Base.similar(src::SwitchingStencilArray{S}) where {S} =
     SwitchingStencilArray{S}(similar(source(src)),similar(dest(src)),stencil(src),boundary(src), padding(src))
 
+function Base.similar(src::SwitchingStencilArray{S}, ::Type{T}, dims::Tuple{Int,Vararg{Int}}) where {S,T}
+    old_dims = size(src)
+    halo_dims = size(parent(src)) .- old_dims
+    new_dims = dims .+ halo_dims
+    return SwitchingStencilArray{dims}(similar(source(src), T, new_dims),similar(dest(src), T, new_dims),stencil(src), boundary(src), padding(src))
+end
+
+Base.similar(src::SwitchingStencilArray{S,T}, dims::Tuple{Int,Vararg{Int}}) where {S,T} = similar(src, T, dims)
+Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} = similar(src, T, size(src))
+    
 function Base.copy(src::SwitchingStencilArray)
     cp = similar(src)
     copyto!(source(cp), source(src))

@@ -7,6 +7,9 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(r, VonNeumann{3,1}(); padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Wrap());
+
+        S = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Wrap());
+
         @test size(A) == size(parent(A)) == (100,)
         @test size(B) == (100,)
         @test size(parent(B)) == (120,)
@@ -15,11 +18,15 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         
         @test size(similar(A)) == (100,)
         @test size(similar(B)) == (100,)
+        @test size(similar(S)) == (100,)
         @test size(similar(C,Int)) == (80,)
 
         @test size(similar(B,40)) == (40,)
+        @test size(similar(S,40)) == (40,)
+        @test size(similar(S,Int,40)) == (40,)
         @test size(parent(similar(B,Int,20))) == (40,)
-
+        
+        @test eltype(similar(S,Bool,20)) == Bool
         @test eltype(similar(B,Int,20)) == Int
 
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
@@ -31,6 +38,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary=Remove(0.0));
+        S = SwitchingStencilArray(r, Window{10}(); padding=Halo{:out}(), boundary=Wrap());
         @test size(A) == size(parent(A)) == (100, 100)
         @test size(B) == (100, 100)
         @test size(parent(B)) === (120, 120)
@@ -44,6 +52,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test size(similar(A)) == size(A)
         @test size(similar(B)) == size(B)
         @test size(similar(C)) == size(C)
+        @test size(similar(S)) == size(S)
         @test size(similar(A,40,40)) == (40,40)
         @test size(similar(B,40,40)) == (40,40)
         @test eltype(similar(B,Int,20,20)) == Int
