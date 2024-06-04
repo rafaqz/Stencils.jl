@@ -261,7 +261,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
     @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((end_y, start_x, end_z))]
     @inbounds src[CI((startpad_y, endpad_x, endpad_x))] .= src[CI((end_y, start_x, start_z))]
     @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((end_y, start_x, start_z))]
+    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((start_y, end_x, start_z))]
     @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((start_y, start_x, end_z))]
     @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((start_y, end_x, end_z))]
     return after_update_boundary!(A)
@@ -271,23 +271,34 @@ end
 # Two dimensions
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{Y,X},R} where {Y,X}
     src = parent(A)
-    
-    # Left boundary
-    @inbounds for i in 1:R
-        src[:, i] = src[:, R + 1 - i]
-    end
-    # Right boundary
-    @inbounds for i in 1:R
-        src[:, end - i + 1] = src[:, end - R - i]
-    end
-    # Top boundary
-    @inbounds for i in 1:R
-        src[i, :] = src[R + 1 - i, :]
-    end
-    # Bottom boundary
-    @inbounds for i in 1:R
-        src[end - i + 1, :] = src[end - R - i, :]
-    end
+    n_xs, n_ys = X, Y
+    startpad_x = startpad_y = 1:R
+    endpad_x = n_xs+R+1:n_xs+2R
+    endpad_y = n_ys+R+1:n_ys+2R
+    start_x = start_y = R+1:2R
+    end_x = n_xs+1:n_xs+R
+    end_y = n_ys+1:n_ys+R
+    xs = 1:n_xs+2R
+    ys = 1:n_ys+2R
+
+    @assert length(startpad_x) == length(start_x) == R
+    @assert length(endpad_x) == length(end_x) == R
+    @assert length(startpad_y) == length(start_y) == R
+    @assert length(endpad_y) == length(end_y) == R
+    @assert map(length, (ys, xs)) === size(src)
+
+    CI = CartesianIndices
+    # Sides ---
+    @inbounds src[CI((ys, startpad_x))] .= src[CI((ys, start_x))]
+    @inbounds src[CI((ys, endpad_x))]   .= src[CI((ys, end_x))]
+    @inbounds src[CI((startpad_y, xs))] .= src[CI((start_y, xs))]
+    @inbounds src[CI((endpad_y, xs))]   .= src[CI((end_y, xs))]
+
+    # Corners ---
+    @inbounds src[CI((startpad_y, startpad_x))] .= src[CI((start_y, start_x))]
+    @inbounds src[CI((startpad_y, endpad_x))]   .= src[CI((start_y, end_x))]
+    @inbounds src[CI((endpad_y, startpad_x))]   .= src[CI((end_y, start_x))]
+    @inbounds src[CI((endpad_y, endpad_x))]     .= src[CI((end_y, end_x))]
     return after_update_boundary!(A)
 end
 
@@ -306,7 +317,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where
     xs = 1:n_xs + 2R
     ys = 1:n_ys + 2R
     zs = 1:n_zs + 2R
-    
+
     @assert length(startpad_x) == length(start_x) == R
     @assert length(endpad_x) == length(end_x) == R
     @assert length(startpad_y) == length(start_y) == R
@@ -326,14 +337,14 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where
     @inbounds copyto!(src, CI((ys, xs, endpad_z)), src, CI((ys, xs, start_z)))
 
     # Corners ---
-    @inbounds src[CI((startpad_y, startpad_x, startpad_z))] .= src[CI((end_y, end_x, end_z))]
-    @inbounds src[CI((startpad_y, startpad_x, endpad_z))] .= src[CI((end_y, end_x, start_z))]
-    @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((end_y, start_x, end_z))]
-    @inbounds src[CI((startpad_y, endpad_x, endpad_z))] .= src[CI((end_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((start_y, start_x, end_z))]
-    @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((start_y, end_x, end_z))]
+    @inbounds src[CI((startpad_y, startpad_x, startpad_z))] .= src[CI((start_y, start_x, start_z))]
+    @inbounds src[CI((startpad_y, startpad_x, endpad_z))] .= src[CI((start_y, start_x, end_z))]
+    @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((start_y, end_x, start_z))]
+    @inbounds src[CI((startpad_y, endpad_x, endpad_z))] .= src[CI((start_y, end_x, end_z))]
+    @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((end_y, end_x, end_z))]
+    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((end_y, end_x, end_z))]
+    @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((end_y, end_x, start_z))]
+    @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((end_y, start_x, start_z))]
     return after_update_boundary!(A)
 end
 
