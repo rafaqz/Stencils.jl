@@ -268,6 +268,24 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
 end
 
 # Reflect() boundary conditions for update_boundary!
+# One dimension
+function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{L},R} where {L}
+    src = parent(A)
+    startpad = 1:R
+    endpad = L+R+1:L+2R
+    startvals = R+1:2R
+    endvals = L+1:L+R
+
+    @assert length(startpad) == length(endvals) == R
+    @assert length(endpad) == length(startvals) == R
+
+    # Reflect values at the boundaries
+    @inbounds src[startpad] .= src[reverse(startvals)]
+    @inbounds src[endpad] .= src[reverse(endvals)]
+
+    return A
+end
+
 # Two dimensions
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{Y,X},R} where {Y,X}
     src = parent(A)
