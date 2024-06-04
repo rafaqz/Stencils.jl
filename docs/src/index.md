@@ -56,6 +56,7 @@ Stencils.BoundaryCondition
 Remove
 Use
 Wrap
+Reflect
 ```
 
 ## Padding
