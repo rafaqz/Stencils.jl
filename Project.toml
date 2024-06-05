@@ -1,7 +1,7 @@
 name = "Stencils"
 uuid = "264155e8-78a8-466a-aa59-c9b28c34d21a"
 authors = ["Rafael Schouten <rafaelschouten@gmail.com>"]
-version = "0.3.q"
+version = "0.3.1"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
