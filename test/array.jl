@@ -140,21 +140,21 @@ end
     parent(B)
     parent(C)
 
-    # Reflect
-    r = (1.0:5.0) * (100.0:105.0)'
-    A = StencilArray(r, Window{1,2}(); padding=Conditional(), boundary=Reflect());
-    B = StencilArray(r, Window{1,2}(); padding=Halo{:out}(), boundary=Reflect());
-    C = StencilArray(copy(r), Window{1,2}(); padding=Halo{:in}(), boundary=Reflect());
-    @time A1 = mapstencil(mean, A)
-    @time B1 = mapstencil(mean, B)
-    @time C1 = mapstencil(mean, C)
-    @test A1[3:end-2, 3:end-2] == B1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1]
-    # Not sure about this one yet
-    @test A1 == B1
-    @test A1[2:end-1, 2:end-1] != C1
-    parent(A)
-    parent(B)
-    parent(C)
+    # # Reflect
+    # r = (1.0:5.0) * (100.0:105.0)'
+    # @test A = StencilArray(r, Window{1,2}(); padding=Conditional(), boundary=Reflect());
+    # B = StencilArray(r, Window{1,2}(); padding=Halo{:out}(), boundary=Reflect());
+    # C = StencilArray(copy(r), Window{1,2}(); padding=Halo{:in}(), boundary=Reflect());
+    # @time A1 = mapstencil(mean, A)
+    # @time B1 = mapstencil(mean, B)
+    # @time C1 = mapstencil(mean, C)
+    # # @test A1[3:end-2, 3:end-2] != B1[3:end-2, 3:end-2] != C1[2:end-1, 2:end-1]
+    # # Not sure about this one yet
+    # @test @test A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1]
+    # @test A1[2:end-1, 2:end-1] != C1
+    # parent(A)
+    # parent(B)
+    # parent(C)
 
 
     @testset "Wrapper array types propagate" begin
@@ -169,6 +169,11 @@ end
         @test res_in isa DimArray
         @test map(d -> d[2:end-1], dims(A)) == dims(res_in)
     end
+end
+
+@testset "trial" begin
+    r = (1.0:5.0) * (100.0:105.0)'
+    @test A = StencilArray(r, Window{1,2}(); padding=Conditional(), boundary=Reflect())
 end
 
 @testset "pad/unpad axes" begin

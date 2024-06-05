@@ -133,6 +133,14 @@ end
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
     checkbounds(Bool, A, I...) ? (@inbounds A[I...]) : boundary.padval
 end
+# For Reflect we mirror the index around the boundary
+@inline function getneighbor(A::AbstractStencilArray{S,R}, ::Reflect, pad::Conditional, I::Tuple) where {S,R}
+    sz = tuple_contents(S)
+    reflected_inds = map(I, sz) do i, s
+        i < 1 ? 2 - i : (i > s ? 2*s - i : i)
+    end
+    return unsafe_getindex(A, pad, reflected_inds...)
+end
 
 @inline function unsafe_getneighbor(A::AbstractStencilArray, I::Tuple)
     unsafe_getneighbor(A, boundary(A), padding(A), I)
@@ -222,6 +230,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
 
     return after_update_boundary!(A)
 end
+# TODO: check line 265
 function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
     src = parent(A)
     n_xs, n_ys, n_zs = X, Y, Z
@@ -261,7 +270,7 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
     @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((end_y, start_x, end_z))]
     @inbounds src[CI((startpad_y, endpad_x, endpad_x))] .= src[CI((end_y, start_x, start_z))]
     @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((start_y, end_x, start_z))]
+    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((end_y, start_x, start_z))] # TODO: check
     @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((start_y, start_x, end_z))]
     @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((start_y, end_x, end_z))]
     return after_update_boundary!(A)
