@@ -125,10 +125,17 @@ end
 ) where {S,R}
     sz = tuple_contents(S)
     wrapped_inds = map(I, sz) do i, s
-        i < 1 ? i + s : (i > s ? i - s : i)
+        if i < 1
+            i + s
+        elseif i > s
+            i - s
+        else
+            i
+        end
     end
     return unsafe_getindex(A, pad, wrapped_inds...)
 end
+
 # For Remove we use padval if out of bounds
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
     checkbounds(Bool, A, I...) ? (@inbounds A[I...]) : boundary.padval
@@ -137,10 +144,17 @@ end
 @inline function getneighbor(A::AbstractStencilArray{S,R}, ::Reflect, pad::Conditional, I::Tuple) where {S,R}
     sz = tuple_contents(S)
     reflected_inds = map(I, sz) do i, s
-        i < 1 ? 2 - i : (i > s ? 2*s - i : i)
+        if i < 1
+            2 - i
+        elseif i > s
+            2 * s - i
+        else
+            i
+        end
     end
     return unsafe_getindex(A, pad, reflected_inds...)
 end
+
 
 @inline function unsafe_getneighbor(A::AbstractStencilArray, I::Tuple)
     unsafe_getneighbor(A, boundary(A), padding(A), I)
