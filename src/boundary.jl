@@ -41,6 +41,15 @@ padding, which is only possible when `Halo{:in}` is used for `padding`.
 """
 struct Use <: BoundaryCondition end
 
+"""
+    Reflect <: BoundaryCondition
+
+    Reflect()
+
+[`BoundaryCondition`](@ref) flag to mirror cordinates that boundary boundaries 
+back to the source cell of the grid.
+"""
+struct Reflect <: BoundaryCondition end
 
 # From DynamicGrids.jl
 
