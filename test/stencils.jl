@@ -168,8 +168,13 @@ end
                                        (2, 2), (3, 2), (1, 3), (2, 3), (3, 3))
     end
     @testset "Moore" begin
-        k = Kernel(Moore{1,2}(SVector(1:4..., 6:9...)), SVector(1:4..., 6:9...))
-        @test kernelproduct(k) === sum((1:4).^2) + sum((6:9).^2)
+        vals = SVector(1:4..., 6:9...)
+        k = Kernel(Moore{1,2}(vals), vals)
+        @test kernelproduct(k) === sum(vals .^ 2)
+        # Nested arrays work too
+        vals2 = map(x -> SVector((x, 2x)), vals)
+        k2 = Kernel(Moore{1,2}(vals2), vals)
+        @test kernelproduct(k2) === sum(map((v2, v) -> v2 .* v, vals2, vals))
     end
     @testset "Positional" begin
         win = reshape(1:9, 3, 3)
