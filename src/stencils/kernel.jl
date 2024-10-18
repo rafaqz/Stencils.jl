@@ -35,15 +35,15 @@ function kernelproduct(hood::AbstractKernelStencil)
 end
 function kernelproduct(hood::Stencil{<:Any,<:Any,L}, kernel) where L
     sum = zero(first(hood))
-    @simd for i in 1:L
+    for i in 1:L
         @inbounds sum += hood[i] * kernel[i]
     end
     return sum
 end
-function kernelproduct(hood::Window{<:Any,<:Any,L}, kernel) where L
+function kernelproduct(hood::Stencil{<:Any,<:Any,L,<:AbstractArray}, kernel) where L
     sum = zero(first(hood))
-    @simd for i in 1:L
-        @inbounds sum += neighbors(hood)[i] * kernel[i]
+    for i in 1:L
+        @inbounds sum = sum .+ hood[i] .* kernel[i]
     end
     return sum
 end
