@@ -78,12 +78,17 @@ getoffset(hood, i::Int) = offsets(hood)[i]
 
 """
     indices(x::Stencil, I::Union{Tuple,CartesianIndex})
+    indices(x::AbstractStencilArray, I::Union{Tuple,CartesianIndex})
 
 Returns an `SVector` of `CartesianIndices` for each neighbor around `I`.
+
+`indices` for `Stencil` do not know about array boundaries and wil not wrap or reflect.
+On `AbstractStencilArray` they will wrap and reflect depending on the boundary condition 
+of the array.
 """
 function indices end
-@inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
-@inline indices(hood::Stencil, I::Int...) = indices(hood, I)
+@inline indices(hood, I::CartesianIndex) = indices(hood, Tuple(I))
+@inline indices(hood, I::Int...) = indices(hood, I)
 # Allow trailing indices - we can use a Stencil with N smaller than the array N
 @inline function indices(hood::Stencil{<:Any,N1}, I::NTuple{N2}) where {N1,N2} 
     map(I1 -> (I1..., I[N1+1:N2]...), indices(hood, I[1:N1])) 
