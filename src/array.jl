@@ -131,7 +131,7 @@ end
 end
 # Wrap and Reflect are always inbounds
 @inline getneighbor(A::AbstractStencilArray, bounds::Union{Wrap,Reflect}, pad::Conditional, I::Tuple) =
-    unsafe_getindex(A, pad, indices(A, bounds, pad, I)...)
+    unsafe_getindex(A, pad, bounded_index(A, bounds, pad, I)...)
 
 @inline function indices(A::AbstractStencilArray, I::Tuple)
      map(indices(stencil(A), I)) do J
@@ -141,14 +141,16 @@ end
 
 @inline bounded_index(A::AbstractStencilArray, I::Int...) = bounded_index(A, I)
 @inline bounded_index(A::AbstractStencilArray, I::CartesianIndex) = bounded_index(A, Tuple(I))
-@inline bounded_index(A::AbstractStencilArray, I::Tuple) = bounded_index(A, padding(A), I)
+@inline bounded_index(A::AbstractStencilArray, I::Tuple) =
+    bounded_index(A, boundary(A), padding(A), I)
 # Halo doesn't change the bounded_index
-@inline bounded_index(A::AbstractStencilArray, padding::Halo, I) = I
-# Conditional may change it
-@inline bounded_index(A::AbstractStencilArray, padding::Conditional, I) = bounded_index(A, boundary(A), padding, I)
+@inline bounded_index(A::AbstractStencilArray, boundary, padding, I) = I
 # We cant do much here - the caller needs a bounds check
-@inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding, I) = I
-@inline function bounded_index(A::AbstractStencilArray{S,R}, boundary::Reflect, padding, I) where {S,R}
+@inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding::Conditional, I) =
+    I
+@inline function bounded_index(
+    A::AbstractStencilArray{S,R}, boundary::Reflect, padding, I
+) where {S,R}
     map(I, tuple_contents(S)) do i, s
         if i < 1
             2 - i
@@ -159,7 +161,9 @@ end
         end
     end
 end
-@inline function bounded_index(A::AbstractStencilArray{S,R}, boundary::Wrap, padding, I) where {S,R}
+@inline function bounded_index(
+    A::AbstractStencilArray{S,R}, boundary::Wrap, padding::Conditional, I
+) where {S,R}
     map(I, tuple_contents(S)) do i, s
         if i < 1
             i + s
