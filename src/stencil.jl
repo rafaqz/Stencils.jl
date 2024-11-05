@@ -157,6 +157,15 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
     end
 end
 
+function Base.show(io::IO, hood::Stencil{R,N}) where {R,N}
+    show(io, typeof(hood))
+    if !isnothing(neighbors(hood))
+        if !isnothing(first(neighbors(hood)))
+            show(io, mime, neighbors(hood))
+        end
+    end
+end
+
 # Get a array of Bool for the offsets that are used by a Stencil
 # This is used to build the ascii stencil shape
 function _bool_array(hood::Stencil{R,1}) where {R}
