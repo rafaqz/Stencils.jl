@@ -30,8 +30,7 @@ function Rectangle{O}(args::SVector...) where O
     L = prod(length ∘ splat(:), O)
     Rectangle{O,R,N,L}(args...)
 end
-Rectangle(os1::AxisOffsets, offsets::AxisOffsets...)
-    Rectangle((os1, offsets...))
+Rectangle(os1::AxisOffsets, offsets::AxisOffsets...) = Rectangle((os1, offsets...))
 Rectangle(offsets::CustomOffsets) = Rectangle{offsets}()
 
 Base.@assume_effects :foldable offsets(::Type{<:Rectangle{O,R,N,L}}) where {O,R,N,L} =
