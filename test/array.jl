@@ -1,6 +1,14 @@
 using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
 
 @testset "StencilArray" begin
+    @testset "indices" begin
+        A = StencilArray(zeros(4, 4), Moore(), boundary=Remove(), padding=Conditional())
+        @test indices(A, (1, 1)) == [(0, 0), (1, 0), (2, 0), (0, 1), (2, 1), (0, 2), (1, 2), (2, 2)]
+        A = StencilArray(zeros(4, 4), Moore(1), boundary=Wrap(), padding=Conditional())
+        @test indices(A, (1, 1)) == [(4, 4), (1, 4), (2, 4), (4, 1), (2, 1), (4, 2), (1, 2), (2, 2)]
+        A = StencilArray(zeros(4, 4), Moore(), boundary=Reflect(), padding=Conditional())
+        @test indices(A, (1, 1)) == [(2, 2), (1, 2), (2, 2), (2, 1), (2, 1), (2, 2), (1, 2), (2, 2)]
+    end
 
     @testset "1d" begin
         r = rand(100)
@@ -98,6 +106,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         @test neighbors(A3d_window_2d, (10, 10, 10)) == neighbors(A3d_pos_3d, (10, 10, 10))
         @test mapstencil(sum, A3d_window_2d) == mapstencil(sum, A3d_pos_3d)
     end
+
 end
 
 @testset "mapstencil" begin

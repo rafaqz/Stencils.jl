@@ -85,7 +85,7 @@ end
 Get stencil neighbors from `A` around center `I` as an `SVector`, without checking bounds of `I`.
 """
 @inline unsafe_neighbors(A::AbstractStencilArray, I::CartesianIndex) = unsafe_neighbors(stencil(A), A, I)
-@inline unsafe_neighbors(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) = 
+@inline unsafe_neighbors(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_neighbors(stencil, padding(A), A, I)
 @inline function unsafe_neighbors(
     hood::Stencil, ::Padding, A::AbstractStencilArray{<:Any,R}, I::CartesianIndex
@@ -125,32 +125,31 @@ This method handles boundary conditions.
 @inline function getneighbor(A::AbstractStencilArray, I::Tuple)
     getneighbor(A, boundary(A), padding(A), I)
 end
-# `Conditional` needs handling for specific boundary conditions.
-# For Wrap we swap the side.
-@inline function getneighbor(
-    A::AbstractStencilArray{S,R}, ::Wrap, pad::Conditional, I::Tuple
-) where {S,R}
-    sz = tuple_contents(S)
-    wrapped_inds = map(I, sz) do i, s
-        if i < 1
-            i + s
-        elseif i > s
-            i - s
-        else
-            i
-        end
-    end
-    return unsafe_getindex(A, pad, wrapped_inds...)
-end
-
 # For Remove we use padval if out of bounds
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
     checkbounds(Bool, A, I...) ? (@inbounds A[I...]) : boundary.padval
 end
-# For Reflect we mirror the index around the boundary
-@inline function getneighbor(A::AbstractStencilArray{S,R}, ::Reflect, pad::Conditional, I::Tuple) where {S,R}
-    sz = tuple_contents(S)
-    reflected_inds = map(I, sz) do i, s
+# Wrap and Reflect are always inbounds
+@inline getneighbor(A::AbstractStencilArray, bounds::Union{Wrap,Reflect}, pad::Conditional, I::Tuple) =
+    unsafe_getindex(A, pad, indices(A, bounds, pad, I)...)
+
+@inline function indices(A::AbstractStencilArray, I::Tuple)
+     map(indices(stencil(A), I)) do J
+         bounded_index(A, J)
+     end
+end
+
+@inline bounded_index(A::AbstractStencilArray, I::Int...) = bounded_index(A, I)
+@inline bounded_index(A::AbstractStencilArray, I::CartesianIndex) = bounded_index(A, Tuple(I))
+@inline bounded_index(A::AbstractStencilArray, I::Tuple) = bounded_index(A, padding(A), I)
+# Halo doesn't change the bounded_index
+@inline bounded_index(A::AbstractStencilArray, padding::Halo, I) = I
+# Conditional may change it
+@inline bounded_index(A::AbstractStencilArray, padding::Conditional, I) = bounded_index(A, boundary(A), padding, I)
+# We cant do much here - the caller needs a bounds check
+@inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding, I) = I
+@inline function bounded_index(A::AbstractStencilArray{S,R}, boundary::Reflect, padding, I) where {S,R}
+    map(I, tuple_contents(S)) do i, s
         if i < 1
             2 - i
         elseif i > s
@@ -159,9 +158,18 @@ end
             i
         end
     end
-    return unsafe_getindex(A, pad, reflected_inds...)
 end
-
+@inline function bounded_index(A::AbstractStencilArray{S,R}, boundary::Wrap, padding, I) where {S,R}
+    map(I, tuple_contents(S)) do i, s
+        if i < 1
+            i + s
+        elseif i > s
+            i - s
+        else
+            i
+        end
+    end
+end
 
 @inline function unsafe_getneighbor(A::AbstractStencilArray, I::Tuple)
     unsafe_getneighbor(A, boundary(A), padding(A), I)
@@ -444,7 +452,7 @@ function Base.copyto!(dst::AbstractStencilArray, src::AbstractStencilArray)
     dst_axes = add_halo(dst, axes(dst))
     src_axes = add_halo(src, axes(src))
     copyto!(
-        parent(dst), CartesianIndices(dst_axes), 
+        parent(dst), CartesianIndices(dst_axes),
         parent(src), CartesianIndices(src_axes),
     )
     return dst
@@ -509,7 +517,7 @@ Base.@propagate_inbounds function Base.setindex!(A::AbstractStencilArray, x, I::
     @boundscheck checkbounds(A, I...)
     unsafe_setindex!(A, x, I...)
 end
-unsafe_setindex!(A::AbstractStencilArray, x, I...) = unsafe_setindex!(A, padding(A), x, I...) 
+unsafe_setindex!(A::AbstractStencilArray, x, I...) = unsafe_setindex!(A, padding(A), x, I...)
 function unsafe_setindex!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
     @inbounds setindex!(parent(A), x, add_halo(A, I)...)
 end
@@ -521,7 +529,7 @@ add_halo(A::AbstractStencilArray, I) = add_halo(padding(A), A, I)
 add_halo(::Halo, A::AbstractStencilArray, I) = _add_halo(A, I)
 add_halo(::Padding, A::AbstractStencilArray, I) = I
 
-_add_halo(A::AbstractStencilArray, I::Tuple) = map(i -> _add_halo(A, i), I) 
+_add_halo(A::AbstractStencilArray, I::Tuple) = map(i -> _add_halo(A, i), I)
 _add_halo(::AbstractStencilArray{<:Any,R}, I::Integer) where R = I + R
 _add_halo(::AbstractStencilArray{<:Any,R}, I::AbstractUnitRange) where R = I .+ R
 _add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndices{N}) where {R,N} =
