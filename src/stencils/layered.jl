@@ -49,7 +49,7 @@ end
 
 radius(layered::Layered{R}) where R = R
 ndimensions(layered::Layered{<:Any,N}) where N = N
-indices(layered::Layered, I) = map(l -> indices(l, I), layered)
+indices(layered::Layered, I::Tuple) = map(l -> indices(l, I), layered)
 
 _zero_values(::Type{T}, l::Layered) where T =
     map(l -> _zero_values(T, l), layers(l))
