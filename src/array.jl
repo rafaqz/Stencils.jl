@@ -288,14 +288,14 @@ function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S
     CI = CartesianIndices
     # Sides ---
     # X
-    @inbounds copxto!(src, CI((startpad_y, xs, zs)), src, CI((end_y, xs, zs)))
-    @inbounds copxto!(src, CI((endpad_y, xs, zs)), src, CI((start_y, xs, zs)))
+    @inbounds copyto!(src, CI((startpad_y, xs, zs)), src, CI((end_y, xs, zs)))
+    @inbounds copyto!(src, CI((endpad_y, xs, zs)), src, CI((start_y, xs, zs)))
     # Y
-    @inbounds copxto!(src, CI((ys, startpad_x, zs)), src, CI((ys, end_x, zs)))
-    @inbounds copxto!(src, CI((ys, endpad_x, zs)), src, CI((ys, start_x, zs)))
+    @inbounds copyto!(src, CI((ys, startpad_x, zs)), src, CI((ys, end_x, zs)))
+    @inbounds copyto!(src, CI((ys, endpad_x, zs)), src, CI((ys, start_x, zs)))
     # Z
-    @inbounds copxto!(src, CI((ys, xs, startpad_z)), src, CI((ys, xs, end_z)))
-    @inbounds copxto!(src, CI((ys, xs, endpad_z)), src, CI((ys, xs, start_z)))
+    @inbounds copyto!(src, CI((ys, xs, startpad_z)), src, CI((ys, xs, end_z)))
+    @inbounds copyto!(src, CI((ys, xs, endpad_z)), src, CI((ys, xs, start_z)))
 
     # Corners ---
     @inbounds src[CI((startpad_y, startpad_x, startpad_z))] .= src[CI((end_y, end_x, end_z))]
