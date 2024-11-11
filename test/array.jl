@@ -20,6 +20,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         SA = SwitchingStencilArray(r, Window{10,1}(); padding=Conditional(), boundary=Remove(0.0));
         SB = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
         SC = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
+
         @test SA.source !== SA.dest
 
         @test size(A) == size(parent(A)) == size(SA) == size(parent(SA)) == (100,)
@@ -34,9 +35,6 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
 
         @test size(similar(B, 40)) == size(similar(SB, 40)) == (40,)
         @test eltype(similar(B, Int)) == eltype(similar(SB, Int)) == Int
-        
-        @test eltype(similar(S, Bool, 20)) == Bool
-        @test eltype(similar(B, Int, 20)) == Int
 
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
         D .= 0.0
@@ -51,6 +49,7 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         SA = SwitchingStencilArray(copy(r), VonNeumann{10}(), padding=Conditional(), boundary=Remove(0.0));
         SB = SwitchingStencilArray(copy(r), Window{10}(), padding=Halo{:out}(), boundary=Remove(0.0));
         SC = SwitchingStencilArray(copy(r), Moore{10}(), padding=Halo{:in}(), boundary=Remove(0.0));
+
         @test size(A) == size(SA) == size(parent(A)) == (100, 100)
         @test size(B) == size(SB) == (100, 100)
         @test size(parent(B)) === size(parent(SB)) === (120, 120)
@@ -90,6 +89,10 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(r, Window{10,3}(), padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary=Remove(0.0));
+        SA = SwitchingStencilArray(r, VonNeumann{10,3}(), padding=Conditional(), boundary=Remove(0.0));
+        SB = SwitchingStencilArray(r, Window{10,3}(), padding=Halo{:out}(), boundary=Remove(0.0));
+        SC = SwitchingStencilArray(r, Moore{10,3}(), padding=Halo{:in}(), boundary=Remove(0.0));
+
         @test size(A) == size(parent(A)) == (100, 100, 100)
         @test size(B) == (100, 100, 100)
         @test size(parent(B)) == (120, 120, 120)

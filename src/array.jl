@@ -308,7 +308,7 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractStencilArray)
     Base.show_circular(io, A) && return
 
     println(io)
-    Base.print_matrix(io, collect(A))
+    Base.print_array(io, A)
     print(io, "\n\nstencil: ")
     show(io, mime, stencil(A))
     print(io, "boundary: ")
