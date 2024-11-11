@@ -62,11 +62,15 @@ returning a switched version of the array.
 sides, or be the same size, in which case it is assumed to also be padded.
 """
 function mapstencil!(f, A::SwitchingStencilArray, args::AbstractArray...)
-    mapstencil!(f, dest(A), A, args...)
+    pd = padding(A) isa Halo ? Halo{:in}() : padding(A)
+    src = StencilArray(source(A), stencil(A), boundary(A), pd)
+    dst = StencilArray(dest(A), stencil(A), boundary(A), pd)
+    mapstencil!(f, dst, src, args...)
     return switch(A)
 end
 function mapstencil!(f, A::SwitchingStencilArray, B::AbstractStencilArray, args::AbstractArray...)
-    mapstencil!(f, dest(A), A, B, args...)
+    dst = StencilArray(dest(A), stencil(A), boundary(A), padding(A))
+    mapstencil!(f, dst, A, B, args...)
     return switch(A)
 end
 function mapstencil!(

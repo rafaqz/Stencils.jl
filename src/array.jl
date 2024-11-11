@@ -144,13 +144,12 @@ end
 @inline bounded_index(A::AbstractStencilArray, I::Tuple) =
     bounded_index(A, boundary(A), padding(A), I)
 # Halo doesn't change the bounded_index
-@inline bounded_index(A::AbstractStencilArray, boundary, padding, I) = I
+@inline bounded_index(A::AbstractStencilArray, boundary, padding::Halo, I::Tuple) = I
 # We cant do much here - the caller needs a bounds check
-@inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding::Conditional, I) =
-    I
+@inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding::Conditional, I::Tuple) = I
 @inline function bounded_index(
-    A::AbstractStencilArray{S,R}, boundary::Reflect, padding, I
-) where {S,R}
+    A::AbstractStencilArray{S}, boundary::Reflect, padding::Conditional, I::Tuple
+) where S
     map(I, tuple_contents(S)) do i, s
         if i < 1
             2 - i
@@ -162,8 +161,8 @@ end
     end
 end
 @inline function bounded_index(
-    A::AbstractStencilArray{S,R}, boundary::Wrap, padding::Conditional, I
-) where {S,R}
+    A::AbstractStencilArray{S}, boundary::Wrap, padding::Conditional, I::Tuple
+) where S
     map(I, tuple_contents(S)) do i, s
         if i < 1
             i + s
@@ -184,6 +183,8 @@ end
     unsafe_getindex(A, pad, I...)
 end
 
+_sub_radius(I, R) = map(i -> i .- R, I)
+
 # update_boundary!
 # Reset or wrap boundary where required. This allows us to ignore
 # bounds checks on stencils and still use a wraparound grid.
@@ -192,9 +193,9 @@ update_boundary!(A::AbstractStencilArray) =
     update_boundary!(A, padding(A), boundary(A))
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
-update_boundary!(A::AbstractStencilArray, ::Halo, ::Use) = A
+update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Use) where {S,R} = A
 # Halo needs updating
-@generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::Remove) where {S<:Tuple,R}
+@generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::BoundaryCondition) where {S,R}
     expr = Expr(:block)
     i = 1
     for _ in S.parameters
@@ -209,203 +210,25 @@ update_boundary!(A::AbstractStencilArray, ::Halo, ::Use) = A
                 push!(inds_expr2.args, :(Base.OneTo($P+2R)))
             end
         end
-        push!(expr.args, :(src[$inds_expr1...] .= (padval(bc),)))
-        push!(expr.args, :(src[$inds_expr2...] .= (padval(bc),)))
+        push!(expr.args, :(Isrc1 = $inds_expr1))
+        push!(expr.args, :(Isrc2 = $inds_expr2))
+        push!(expr.args, :(I1 = _sub_radius(Isrc1, R)))
+        push!(expr.args, :(I2 = _sub_radius(Isrc2, R)))
+        push!(expr.args, :(src[Isrc1...] .= halo_val.((A,), (bc,), CartesianIndices(I1))))
+        push!(expr.args, :(src[Isrc2...] .= halo_val.((A,), (bc,), CartesianIndices(I2))))
         i += 1
     end
     return quote
         src = parent(A)
         $expr
+        return after_update_boundary!(A)
     end
 end
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{L},R} where {L}
-    src = parent(A)
-    startpad = 1:R
-    endpad = L+R+1:L+2R
-    startvals = R+1:2R
-    endvals = L+1:L+R
-    @assert length(startpad) == length(endvals) == R
-    @assert length(endpad) == length(startvals) == R
-    @inbounds src[startpad] .= src[endvals]
-    @inbounds src[endpad] .= src[startvals]
-    return A
-end
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{Y,X},R} where {Y,X}
-    src = parent(A)
-    n_xs, n_ys = X, Y
-    startpad_x = startpad_y = 1:R
-    endpad_x = n_xs+R+1:n_xs+2R
-    endpad_y = n_ys+R+1:n_ys+2R
-    start_x = start_y = R+1:2R
-    end_x = n_xs+1:n_xs+R
-    end_y = n_ys+1:n_ys+R
-    xs = 1:n_xs+2R
-    ys = 1:n_ys+2R
 
-    @assert length(startpad_x) == length(start_x) == R
-    @assert length(endpad_x) == length(end_x) == R
-    @assert length(startpad_y) == length(start_y) == R
-    @assert length(endpad_y) == length(end_y) == R
-    @assert map(length, (ys, xs)) === size(src)
-
-    CI = CartesianIndices
-    # Sides ---
-    @inbounds src[CI((ys, startpad_x))] .= src[CI((ys, end_x))]
-    @inbounds src[CI((ys, endpad_x))]   .= src[CI((ys, start_x))]
-    @inbounds src[CI((startpad_y, xs))] .= src[CI((end_y, xs))]
-    @inbounds src[CI((endpad_y, xs))]   .= src[CI((start_y, xs))]
-
-    # Corners ---
-    @inbounds src[CI((startpad_y, startpad_x))] .= src[CI((end_y, end_x))]
-    @inbounds src[CI((startpad_y, endpad_x))]   .= src[CI((end_y, start_x))]
-    @inbounds src[CI((endpad_y, startpad_x))]   .= src[CI((start_y, end_x))]
-    @inbounds src[CI((endpad_y, endpad_x))]     .= src[CI((start_y, start_x))]
-
-    return after_update_boundary!(A)
-end
-# TODO: check line 265
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Wrap) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
-    src = parent(A)
-    n_xs, n_ys, n_zs = X, Y, Z
-    startpad_x = startpad_y = startpad_z = 1:R
-    endpad_x = n_xs+R+1:n_xs+2R
-    endpad_y = n_ys+R+1:n_ys+2R
-    endpad_z = n_ys+R+1:n_zs+2R
-    start_x = start_y = start_z = R+1:2R
-    end_x = n_xs+1:n_xs+R
-    end_y = n_ys+1:n_ys+R
-    end_z = n_zs+1:n_zs+R
-    xs = 1:n_xs+2R
-    ys = 1:n_ys+2R
-    zs = 1:n_zs+2R
-
-    @assert length(startpad_x) == length(start_x) == R
-    @assert length(endpad_x) == length(end_x) == R
-    @assert length(startpad_y) == length(start_y) == R
-    @assert length(endpad_y) == length(end_y) == R
-    @assert map(length, (zs , ys, xs)) === size(src)
-
-    CI = CartesianIndices
-    # Sides ---
-    # X
-    @inbounds copyto!(src, CI((startpad_y, xs, zs)), src, CI((end_y, xs, zs)))
-    @inbounds copyto!(src, CI((endpad_y, xs, zs)), src, CI((start_y, xs, zs)))
-    # Y
-    @inbounds copyto!(src, CI((ys, startpad_x, zs)), src, CI((ys, end_x, zs)))
-    @inbounds copyto!(src, CI((ys, endpad_x, zs)), src, CI((ys, start_x, zs)))
-    # Z
-    @inbounds copyto!(src, CI((ys, xs, startpad_z)), src, CI((ys, xs, end_z)))
-    @inbounds copyto!(src, CI((ys, xs, endpad_z)), src, CI((ys, xs, start_z)))
-
-    # Corners ---
-    @inbounds src[CI((startpad_y, startpad_x, startpad_z))] .= src[CI((end_y, end_x, end_z))]
-    @inbounds src[CI((startpad_y, startpad_x, endpad_z))] .= src[CI((end_y, end_x, start_z))]
-    @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((end_y, start_x, end_z))]
-    @inbounds src[CI((startpad_y, endpad_x, endpad_x))] .= src[CI((end_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((end_y, start_x, start_z))] # TODO: check
-    @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((start_y, start_x, end_z))]
-    @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((start_y, end_x, end_z))]
-    return after_update_boundary!(A)
-end
-
-# Reflect() boundary conditions for update_boundary!
-# One dimension
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{L},R} where {L}
-    src = parent(A)
-    startpad = 1:R
-    endpad = L+R+1:L+2R
-    startvals = R+1:2R
-    endvals = L+1:L+R
-
-    @assert length(startpad) == length(endvals) == R
-    @assert length(endpad) == length(startvals) == R
-
-    # Reflect values at the boundaries
-    @inbounds src[startpad] .= src[reverse(startvals)]
-    @inbounds src[endpad] .= src[reverse(endvals)]
-
-    return A
-end
-
-# Two dimensions
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{Y,X},R} where {Y,X}
-    src = parent(A)
-    n_xs, n_ys = X, Y
-    startpad_x = startpad_y = 1:R
-    endpad_x = n_xs+R+1:n_xs+2R
-    endpad_y = n_ys+R+1:n_ys+2R
-    start_x = start_y = R+1:2R
-    end_x = n_xs+1:n_xs+R
-    end_y = n_ys+1:n_ys+R
-    xs = 1:n_xs+2R
-    ys = 1:n_ys+2R
-
-    @assert length(startpad_x) == length(start_x) == R
-    @assert length(endpad_x) == length(end_x) == R
-    @assert length(startpad_y) == length(start_y) == R
-    @assert length(endpad_y) == length(end_y) == R
-    @assert map(length, (ys, xs)) === size(src)
-
-    CI = CartesianIndices
-    # Sides ---
-    @inbounds src[CI((ys, startpad_x))] .= src[CI((ys, start_x))]
-    @inbounds src[CI((ys, endpad_x))]   .= src[CI((ys, end_x))]
-    @inbounds src[CI((startpad_y, xs))] .= src[CI((start_y, xs))]
-    @inbounds src[CI((endpad_y, xs))]   .= src[CI((end_y, xs))]
-
-    # Corners ---
-    @inbounds src[CI((startpad_y, startpad_x))] .= src[CI((start_y, start_x))]
-    @inbounds src[CI((startpad_y, endpad_x))]   .= src[CI((start_y, end_x))]
-    @inbounds src[CI((endpad_y, startpad_x))]   .= src[CI((end_y, start_x))]
-    @inbounds src[CI((endpad_y, endpad_x))]     .= src[CI((end_y, end_x))]
-    return after_update_boundary!(A)
-end
-
-# Three dimensions
-function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Reflect) where {S<:Tuple{Z,Y,X},R} where {Z,Y,X}
-    src = parent(A)
-    n_xs, n_ys, n_zs = X, Y, Z
-    startpad_x = startpad_y = startpad_z = 1:R
-    endpad_x = n_xs + R + 1:n_xs + 2R
-    endpad_y = n_ys + R + 1:n_ys + 2R
-    endpad_z = n_ys + R + 1:n_zs + 2R
-    start_x = start_y = start_z = R + 1:2R
-    end_x = n_xs + 1:n_xs + R
-    end_y = n_ys + 1:n_ys + R
-    end_z = n_zs + 1:n_zs + R
-    xs = 1:n_xs + 2R
-    ys = 1:n_ys + 2R
-    zs = 1:n_zs + 2R
-
-    @assert length(startpad_x) == length(start_x) == R
-    @assert length(endpad_x) == length(end_x) == R
-    @assert length(startpad_y) == length(start_y) == R
-    @assert length(endpad_y) == length(end_y) == R
-    @assert map(length, (zs, ys, xs)) === size(src)
-
-    CI = CartesianIndices
-    # Sides ---
-    # X
-    @inbounds copyto!(src, CI((startpad_y, xs, zs)), src, CI((end_y, xs, zs)))
-    @inbounds copyto!(src, CI((endpad_y, xs, zs)), src, CI((start_y, xs, zs)))
-    # Y
-    @inbounds copyto!(src, CI((ys, startpad_x, zs)), src, CI((ys, end_x, zs)))
-    @inbounds copyto!(src, CI((ys, endpad_x, zs)), src, CI((ys, start_x, zs)))
-    # Z
-    @inbounds copyto!(src, CI((ys, xs, startpad_z)), src, CI((ys, xs, end_z)))
-    @inbounds copyto!(src, CI((ys, xs, endpad_z)), src, CI((ys, xs, start_z)))
-
-    # Corners ---
-    @inbounds src[CI((startpad_y, startpad_x, startpad_z))] .= src[CI((start_y, start_x, start_z))]
-    @inbounds src[CI((startpad_y, startpad_x, endpad_z))] .= src[CI((start_y, start_x, end_z))]
-    @inbounds src[CI((startpad_y, endpad_x, startpad_z))] .= src[CI((start_y, end_x, start_z))]
-    @inbounds src[CI((startpad_y, endpad_x, endpad_z))] .= src[CI((start_y, end_x, end_z))]
-    @inbounds src[CI((endpad_y, endpad_x, endpad_z))] .= src[CI((end_y, end_x, end_z))]
-    @inbounds src[CI((endpad_y, startpad_x, endpad_z))] .= src[CI((end_y, end_x, end_z))]
-    @inbounds src[CI((endpad_y, endpad_x, startpad_z))] .= src[CI((end_y, end_x, start_z))]
-    @inbounds src[CI((endpad_y, startpad_x, startpad_z))] .= src[CI((end_y, start_x, start_z))]
-    return after_update_boundary!(A)
+@inline halo_val(A, bc::Remove, I::CartesianIndex) = padval(bc)
+@inline halo_val(A, bc::Union{Wrap,Reflect}, I::CartesianIndex) = begin
+    bI = bounded_index(A, bc, Conditional(), Tuple(I))
+    return A[bI...]
 end
 
 # Allow additional boundary updating behaviours
@@ -479,13 +302,18 @@ function Base.copyto!(dst::AbstractStencilArray, src::AbstractArray)
 end
 
 function Base.show(io::IO, mime::MIME"text/plain", A::AbstractStencilArray)
-    show(io, mime, Array(A))
-    println()
-    println()
+    summary(io, A)
+    isempty(A) && return
+    print(io, ":")
+    Base.show_circular(io, A) && return
+
+    println(io)
+    Base.print_array(io, A)
+    print(io, "\n\nstencil: ")
     show(io, mime, stencil(A))
-    println()
+    print(io, "boundary: ")
     show(io, mime, boundary(A))
-    println()
+    print(io, "\npadding: ")
     show(io, mime, padding(A))
 end
 
@@ -635,18 +463,10 @@ _size(::Conditional, stencil, parent) = size(parent)
 _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
 
 #Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables.
-function Base.similar(src::StencilArray{S,R}) where {S,R}
-    return StencilArray{S,R}(similar(parent(src)), stencil(src), boundary(src), padding(src))
-end
-function Base.similar(src::StencilArray{S,R}, ::Type{T}, dims::Tuple{Int,Vararg{Int}}) where {S,R,T}
-    old_dims = size(src)
-    halo_dims = size(parent(src)) .- old_dims
-    new_dims = dims .+ halo_dims
-    # @info "" new_dims halo_dims dims size(similar(parent(src),T,new_dims))
-    return StencilArray{dims,R}(similar(parent(src), T, new_dims), stencil(src), boundary(src), padding(src))
-end
-Base.similar(src::StencilArray{S,R,T}, dims::Tuple{Int,Vararg{Int}}) where {S,R,T} = similar(src, T, dims)
-Base.similar(src::StencilArray{S,R}, ::Type{T}) where {S,R,T} = similar(src, T, size(src))
+Base.similar(A::StencilArray{S}) where {S} =
+    StencilArray{S}(similar(parent(A)), stencil(A), boundary(A), padding(A))
+Base.similar(A::StencilArray{S}, ::Type{T}) where {S,T} =
+    StencilArray{S}(similar(parent(A), T), stencil(A), boundary(A), padding(A))
 
 function Base.copy(src::StencilArray)
     cp = similar(src)
@@ -674,10 +494,13 @@ abstract type AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P} <: AbstractStencil
 Base.parent(d::AbstractSwitchingStencilArray) = source(d)
 
 source(A::AbstractSwitchingStencilArray) = A.source
+source(A::AbstractStencilArray) = parent(A)
+
 dest(A::AbstractSwitchingStencilArray) = A.dest
+dest(A::AbstractStencilArray) = parent(A)
+
 radius(d::AbstractStencilArray{<:Any,R}) where R = R
 padval(d::AbstractStencilArray) = padval(boundary(d))
-
 
 """
     SwitchingStencilArray <: AbstractSwitchingStencilArray
@@ -742,6 +565,7 @@ end
 function SwitchingStencilArray(parent::AbstractArray, hood::StencilOrLayered, bc, padding)
     padded_source = pad_array(padding, bc, hood, parent)
     padded_dest = pad_array(padding, bc, hood, parent)
+    padded_dest = padded_source === padded_dest ? copy(padded_source) : padded_dest
     S = Tuple{_size(padding, hood, padded_source)...}
     return SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
 end
@@ -759,19 +583,12 @@ Swap the source and dest of a `SwitchingStencilArray`.
 switch(A::SwitchingStencilArray{S}) where S =
     SwitchingStencilArray{S}(dest(A), source(A), stencil(A), boundary(A), padding(A))
 
-Base.parent(A::SwitchingStencilArray) = A.source
+Base.parent(A::SwitchingStencilArray) = source(A)
 
 Base.similar(src::SwitchingStencilArray{S}) where {S} =
-    SwitchingStencilArray{S}(similar(source(src)),similar(dest(src)),stencil(src),boundary(src), padding(src))
-function Base.similar(src::SwitchingStencilArray{S}, ::Type{T}, dims::Tuple{Int,Vararg{Int}}) where {S,T}
-    old_dims = size(src)
-    halo_dims = size(parent(src)) .- old_dims
-    new_dims = dims .+ halo_dims
-    return SwitchingStencilArray{dims}(similar(source(src), T, new_dims),similar(dest(src), T, new_dims),stencil(src), boundary(src), padding(src))
-end
-
-Base.similar(src::SwitchingStencilArray{S,T}, dims::Tuple{Int,Vararg{Int}}) where {S,T} = similar(src, T, dims)
-Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} = similar(src, T, size(src))
+    SwitchingStencilArray{S}(similar(source(src)), similar(dest(src)), stencil(src), boundary(src), padding(src))
+Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} =
+    SwitchingStencilArray{S}(similar(source(src), T), similar(dest(src), T), stencil(src), boundary(src), padding(src))
 
 function Base.copy(src::SwitchingStencilArray)
     cp = similar(src)
