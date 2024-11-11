@@ -259,6 +259,7 @@ end
     end
 
     @testset "Wrapper array types propagate" begin
+        r = (1.0:5.0) * (100.0:105.0)'
         A = DimArray(r, (X(10:10:50), Y(1.0:6.0)))
         res_cond = mapstencil(sum, Window(1), A)
         @test res_cond isa DimArray
