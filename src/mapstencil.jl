@@ -18,7 +18,7 @@ function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::Abst
     return mapstencil!(f, dest, source, args...)
 end
 function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...)
-    sa = StencilArray(A, Window(1); kw...)
+    sa = StencilArray(A, hood; kw...)
     T_return = _return_type(f, sa, args...)
     dest = if padding(sa) isa Halo{:in}
         # We need to shrink the dest array size
