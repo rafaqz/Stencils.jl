@@ -270,6 +270,7 @@ end
         res_in = mapstencil(sum, Window(1), A; padding=Halo{:in}())
         @test res_in isa DimArray
         @test map(d -> d[2:end-1], dims(A)) == dims(res_in)
+        @test mapstencil(sum, Stencils.Circle(2), A) == mapstencil(sum, StencilArray(A, Stencils.Circle(2)))
     end
 end
 
