@@ -80,3 +80,6 @@ offsets(::Type{<:NamedStencil{<:Any,O}}) where O = SVector(O)
 @inline function rebuild(n::NamedStencil{K,O,R,N,L}, neighbors) where {K,O,R,N,L}
     NamedStencil{K,O,R,N,L}(neighbors)
 end
+
+NamedStencil(s::Cardinal) = NamedStencil{(:E, :S, :N, :W)}(s)
+NamedStencil(s::Ordinal) = NamedStencil{(:SE, :NE, :SW, :NW)}(s)

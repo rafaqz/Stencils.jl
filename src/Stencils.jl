@@ -8,8 +8,9 @@ using Adapt,
 
 import SparseArrays
 
-export Stencil, Window, Rectangle, Kernel, Moore, VonNeumann, Positional, Layered, 
-    Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal, Diamond, NamedStencil
+export Stencil, Window, Rectangle, Kernel, Moore, VonNeumann, Positional, Layered,
+    Circle, Cross, AngledCross, BackSlash, ForwardSlash, Vertical, Horizontal, Diamond,
+    NamedStencil, Annulus, Cardinal, Ordinal
 
 export StencilArray, SwitchingStencilArray
 
