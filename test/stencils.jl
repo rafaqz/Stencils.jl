@@ -203,6 +203,29 @@ end
     # Shorthand syntax for naming another stencil
     @test h1 == NamedStencil{(:n,:e,:w,:s)}(VonNeumann())
     @test_throws ArgumentError NamedStencil{(:n,:s)}(VonNeumann())
+
+    # Cardinal and Ordinal (fixed wind directions) can be used as NamedStencils
+    ns = NamedStencil(Cardinal(1))
+    @test mapstencil(StencilArray(win, ns)) do s
+        s.W + s.S
+    end == [
+        1 0 0 1 0
+        0 2 0 0 1
+        0 0 2 1 0
+        0 1 0 2 1
+        0 1 1 1 1
+    ]
+
+    ns = NamedStencil(Ordinal(1))
+    @test mapstencil(StencilArray(win, ns)) do s
+        s.NE + s.NW
+    end == [
+        0 1 0 1 0
+        0 0 1 1 1
+        0 1 0 2 0
+        0 2 0 2 0
+        0 0 0 0 0
+    ]
 end
 
 @testset "Layered" begin
