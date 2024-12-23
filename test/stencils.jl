@@ -71,6 +71,7 @@ end
     @test offsets(vonneumann2) == SVector((0, -2), (-1, -1), (0, -1), (1, -1),
          (-2 , 0), (-1, 0), (1, 0), (2, 0),
          (-1, 1), (0, 1), (1, 1), (0, 2))
+end
 
 @testset "Annulus" begin
     h = Annulus{1}()
