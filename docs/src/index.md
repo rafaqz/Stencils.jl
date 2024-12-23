@@ -27,6 +27,9 @@ Rectangle
 Vertical
 VonNeumann
 Window
+Annulus
+Cardinal
+Ordinal
 ```
 
 ## Stencil functions

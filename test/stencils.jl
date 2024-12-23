@@ -71,6 +71,58 @@ end
     @test offsets(vonneumann2) == SVector((0, -2), (-1, -1), (0, -1), (1, -1),
          (-2 , 0), (-1, 0), (1, 0), (2, 0),
          (-1, 1), (0, 1), (1, 1), (0, 2))
+
+@testset "Annulus" begin
+    h = Annulus{1}()
+    A = StencilArray(init, h)
+    annulus = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    @test offsets(annulus) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1),
+        (0, 1), (1, 1))
+    @test radius(annulus) == 1
+    @test diameter(annulus) == 3
+    @test annulus[1] == 0
+    @test annulus[2] == 1
+    @test length(annulus) == 8
+    @test eltype(annulus) == Int
+    @test neighbors(annulus) == SVector(0, 1, 0, 0, 1, 0, 1, 1)
+    @test sum(neighbors(annulus)) == sum(annulus) == 4
+    annulus2 = Annulus{2}()
+    @test offsets(annulus2) == SVector((-1, -2), (0, -2), (1, -2), (-2, -1), (2, -1),
+        (-2, 0), (2, 0), (-2, 1), (2, 1), (-1, 2), (0, 2), (1, 2))
+end
+
+@testset "Ordinal" begin
+    h = Ordinal{1}()
+    A = StencilArray(init, h)
+    ordinal = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    @test offsets(ordinal) == SVector((-1, -1), (1, -1), (-1, 1), (1, 1))
+    @test radius(ordinal) == 1
+    @test diameter(ordinal) == 3
+    @test ordinal[1] == 0
+    @test ordinal[4] == 1
+    @test length(ordinal) == 4
+    @test eltype(ordinal) == Int
+    @test neighbors(ordinal) == SVector(0, 0, 0, 1)
+    @test sum(neighbors(ordinal)) == sum(ordinal) == 1
+    ordinal2 = Ordinal{2}()
+    @test offsets(ordinal2) == SVector((-2, -2), (2, -2), (-2, 2), (2, 2))
+end
+
+@testset "Cardinal" begin
+    h = Cardinal{1}()
+    A = StencilArray(init, h)
+    cardinal = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    @test offsets(cardinal) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
+    @test radius(cardinal) == 1
+    @test diameter(cardinal) == 3
+    @test cardinal[1] == 1
+    @test cardinal[2] == 0
+    @test length(cardinal) == 4
+    @test eltype(cardinal) == Int
+    @test neighbors(cardinal) == SVector(1, 0, 1, 1)
+    @test sum(neighbors(cardinal)) == sum(cardinal) == 3
+    cardinal2 = Cardinal{2}()
+    @test offsets(cardinal2) == SVector((0, -2), (-2, 0), (2, 0), (0, 2))
 end
 
 @testset "Positional" begin
