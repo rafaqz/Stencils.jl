@@ -161,7 +161,7 @@ function Base.show(io::IO, hood::Stencil{R,N}) where {R,N}
     show(io, typeof(hood))
     if !isnothing(neighbors(hood))
         if !isnothing(first(neighbors(hood)))
-            show(io, mime, neighbors(hood))
+            show(io, neighbors(hood))
         end
     end
 end
