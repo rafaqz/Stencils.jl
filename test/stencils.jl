@@ -12,7 +12,7 @@ win2 = SA[1, 1, 1, 1, 0, 1, 1, 1, 1]
 win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 
 @testset "Moore" begin
-    moore = Moore{1,2}(SVector(0,1,0,0,1,0,1,1))
+    moore = Moore{1,2}(1, SVector(0,1,0,0,1,0,1,1))
     @test isbits(moore)
 
     # Stencils.distance_zones(moore)
@@ -34,7 +34,7 @@ end
 
 @testset "Window" begin
     @test Window{1}() == Window{1,2}()
-    window = Window{1}(SVector(init[1:3, 1:3]...))
+    window = Window{1}(1, SVector(init[1:3, 1:3]...))
     @test isbits(window)
     @test diameter(window) == 3
     @test window[1] == 0
@@ -46,18 +46,18 @@ end
     @test offsets(window) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
                                      (1, 0), (-1, 1), (0, 1), (1, 1))
 
-    window2 = Stencils.rebuild(window, SVector(win2...))
+    window2 = Stencils.rebuild(window, 1, SVector(win2...))
     @test neighbors(window2) == SVector(win2...)
 
-    @test sum(Window{1}(win1)) == 1
-    @test sum(Window{1}(win2)) == 8
-    @test sum(Window{1}(win3)) == 5
+    @test sum(Window{1}(1, win1)) == 1
+    @test sum(Window{1}(1, win2)) == 8
+    @test sum(Window{1}(1, win3)) == 5
 end
 
 @testset "VonNeumann" begin
     h = VonNeumann{1}()
     A = StencilArray(init, h)
-    vonneumann = Stencils.rebuild(h, neighbors(A, (2, 2))) 
+    vonneumann = Stencils.rebuild(h, 1, neighbors(A, (2, 2))) 
     @test offsets(vonneumann) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(vonneumann) == 1
     @test diameter(vonneumann) == 3
@@ -207,7 +207,7 @@ end
         off = ((0,-1),(-1,0),(1,0),(0,1))
         hood = Positional{off,1,2,4,}()
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))
-        k = Stencils.rebuild(Kernel(hood, 1:4), vals)
+        k = Stencils.rebuild(Kernel(hood, 1:4), 1, vals)
         @test kernelproduct(k) === 1 * 2 + 2 * 4 + 3 * 6 + 4 * 8 === 60
     end
     @testset "Adapt" begin

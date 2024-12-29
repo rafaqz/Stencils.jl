@@ -38,7 +38,7 @@ function _return_type(f, A::AbstractStencilArray{<:Any,<:Any,T}, args...) where 
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     emptyneighbors = _zero_values(T1, st)
-    H = typeof(rebuild(st, emptyneighbors))
+    H = typeof(rebuild(st, zero(T1), emptyneighbors))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
     return Base._return_type(f, Tuple{H,map(eltype, args)...})
 end
@@ -144,6 +144,7 @@ function _checksizes(sources::Tuple)
     return nothing
 end
 
+# TODO These methods have unused variables and don't seem to be used anywhere
 function applystencil(f, hood, sources::Tuple, I)
     hoods = map(s -> stencil(s, I), sources)
     vals = map(s -> s[I], sources)

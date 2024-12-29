@@ -1,5 +1,5 @@
 @stencil VonNeumann """
-Diamond-shaped neighborhood (in 2 dimwnsions), without the central cell
+Diamond-shaped neighborhood (in 2 dimensions), without the central cell
 In 1 dimension it is identical to [`Moore`](@ref).
 """
 @generated function offsets(::Type{<:VonNeumann{R,N}}) where {R,N}

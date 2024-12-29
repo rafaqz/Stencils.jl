@@ -98,6 +98,13 @@ end
 Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offsets(hood)[i]) + center
 
 """
+    center(x::Stencil)
+
+Return the value of the central cell in the stencil.
+"""
+center(hood::Stencil) = getfield(hood, :center)
+
+"""
     distances(hood::Stencil)
 
 Returns an `SVector` of center-to-center distance of each stencil position from the central
@@ -224,22 +231,30 @@ macro stencil(name, description)
 
     struct_expr = quote
         struct $name{R,N,L,T} <: Stencil{R,N,L,T}
+            center::T
             neighbors::SVector{L,T}
-            $name{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
+            $name{R,N,L,T}(center::T, neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(center, neighbors)
         end
     end
     func_exprs = quote
-        $name{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(neighbors)
-        $name{R,N,L}() where {R,N,L} = $name{R,N,L}(SVector(ntuple(_ -> nothing, L)))
-        function $name{R,N}(args::StaticVector...) where {R,N}
+        
+        # Filled stencils
+        $name{R,N,L}(center::T, neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(center, neighbors)
+        $name{R,N}(center::T, neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(center, neighbors)
+        $name{R}(center, args::StaticVector) where R = $name{R,2}(center, args)
+        $name(center, args::StaticVector; radius=1, ndims=2) = $name{radius,ndims}(center, args)
+
+        # Empty stencils
+        $name{R,N,L}() where {R,N,L} = $name{R,N,L}(nothing, SVector(ntuple(_ -> nothing, L)))
+        function $name{R,N}() where {R,N}
             L = length(offsets($name{R,N}))
-            $name{R,N,L}(args...)
+            $name{R,N,L}()
         end
-        $name{R}(args::StaticVector...) where R = $name{R,2}(args...)
-        $name(args::StaticVector...; radius=1, ndims=2) = $name{radius,ndims}(args...)
+        $name{R}() where R = $name{R,2}()
+        $name(; radius=1, ndims=2) = $name{radius,ndims}()
         $name(radius::Int, ndims::Int=2) = $name{radius,ndims}()
 
-        @inline Stencils.rebuild(n::$name{R,N,L}, neighbors) where {R,N,L} = $name{R,N,L}(neighbors)
+        @inline Stencils.rebuild(n::$name{R,N,L}, center, neighbors) where {R,N,L} = $name{R,N,L}(center, neighbors)
     end
     return Expr(:block, :(Base.@doc $docstring $struct_expr), func_exprs)
 end

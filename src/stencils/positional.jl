@@ -29,21 +29,28 @@ Positional{((0, -1), (2, 1), (-1, 1), (0, 1)), 2, 2, 4, Nothing}
 ```
 """
 struct Positional{O,R,N,L,T} <: Stencil{R,N,L,T}
+    center::T
     neighbors::SVector{L,T}
-    function Positional{O,R,N,L,T}(neighbors::SVector{L,T}) where {O,R,N,L,T} 
+    function Positional{O,R,N,L,T}(center::T, neighbors::SVector{L,T}) where {O,R,N,L,T} 
         @assert all(map(o -> length(o) == N, O)) "All offsets must be the length `N` of $N, got $O" 
-        new{O,R,N,L,T}(neighbors)
+        new{O,R,N,L,T}(center, neighbors)
     end
 end
-Positional{O,R,N,L}(neighbors::SVector{L,T}) where {O,R,N,L,T} = 
-    Positional{O,R,N,L,T}(neighbors)
+Positional{O,R,N,L}(center::T, neighbors::SVector{L,T}) where {O,R,N,L,T} = 
+    Positional{O,R,N,L,T}(center, neighbors)
 Positional{O,R,N,L}() where {O,R,N,L} = 
-    Positional{O,R,N,L}(SVector(ntuple(_ -> nothing, L)))
-function Positional{O}(args::SVector...) where O
+    Positional{O,R,N,L}(nothing, SVector(ntuple(_ -> nothing, L)))
+function Positional{O}(center, args::SVector) where O
     N = length(first(O))
     R = _positional_radii(N, O)
     L = length(O)
-    Positional{O,R,N,L}(args...)
+    Positional{O,R,N,L}(center, args)
+end
+function Positional{O}() where O
+    N = length(first(O))
+    R = _positional_radii(N, O)
+    L = length(O)
+    Positional{O,R,N,L}()
 end
 Positional(os1::CustomOffset, offsets::CustomOffset...) = Positional((os1, offsets...))
 Positional(offsets::CustomOffsets) = Positional{offsets}()
@@ -54,8 +61,8 @@ end
 
 offsets(::Type{<:Positional{O}}) where O = SVector(O)
 
-@inline function rebuild(n::Positional{O,R,N,L}, neighbors) where {O,R,N,L}
-    Positional{O,R,N,L}(neighbors)
+@inline function rebuild(::Positional{O,R,N,L}, center, neighbors) where {O,R,N,L}
+    Positional{O,R,N,L}(center, neighbors)
 end
 
 # Calculate the maximum absolute value in the offsets to use as the radius

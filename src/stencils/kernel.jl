@@ -116,8 +116,8 @@ end
 
 # We *dont* want `rebuild` to trigger kernel function rebuilds
 # so we can update the neighborhood with no runtime cost
-function rebuild(n::Kernel{R,N,L}, neighbors) where {R,N,L}
-    hood = rebuild(stencil(n), neighbors)
+function rebuild(n::Kernel{R,N,L}, center, neighbors) where {R,N,L}
+    hood = rebuild(stencil(n), center, neighbors)
     return Kernel{R,N,L,eltype(hood),typeof(n.f),typeof(hood),typeof(kernel(n))}(n.f, hood, kernel(n))
 end
 
