@@ -185,7 +185,7 @@ end
         @test Kernel(Window{1,2}(), SMatrix{3,3}(reshape(1:9, 3, 3))) == 
             Kernel(SMatrix{3,3}(reshape(1:9, 3, 3)))
             Kernel(reshape(1:9, 3, 3))
-        k = Kernel(Window{1,2}(kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
+        k = Kernel(Window{1,2}(5, kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
         @test kernelproduct(k) == sum((1:9).^2)
         @test neighbors(k) == SVector{9}(1:9)
         @test offsets(k) === SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
@@ -195,11 +195,11 @@ end
     end
     @testset "Moore" begin
         vals = SVector(1:4..., 6:9...)
-        k = Kernel(Moore{1,2}(vals), vals)
+        k = Kernel(Moore{1,2}(4, vals), vals)
         @test kernelproduct(k) === sum(vals .^ 2)
         # Nested arrays work too
         vals2 = map(x -> SVector((x, 2x)), vals)
-        k2 = Kernel(Moore{1,2}(vals2), vals)
+        k2 = Kernel(Moore{1,2}(4, vals2), vals)
         @test kernelproduct(k2) === sum(map((v2, v) -> v2 .* v, vals2, vals))
     end
     @testset "Positional" begin
