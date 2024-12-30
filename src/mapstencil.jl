@@ -38,7 +38,7 @@ function _return_type(f, A::AbstractStencilArray{<:Any,<:Any,T}, args...) where 
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     emptyneighbors = _zero_values(T1, st)
-    H = typeof(rebuild(st, zero(T1), emptyneighbors))
+    H = typeof(rebuild(st, emptyneighbors, zero(T1)))
     # Use nasty broadcast mechanism `_return_type` to get the new eltype
     return Base._return_type(f, Tuple{H,map(eltype, args)...})
 end

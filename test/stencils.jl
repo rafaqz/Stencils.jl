@@ -12,7 +12,7 @@ win2 = SA[1, 1, 1, 1, 0, 1, 1, 1, 1]
 win3 = SA[1, 1, 1, 0, 0, 1, 0, 0, 1]
 
 @testset "Moore" begin
-    moore = Moore{1,2}(1, SVector(0,1,0,0,1,0,1,1))
+    moore = Moore{1,2}(SVector(0,1,0,0,1,0,1,1), 1)
     @test isbits(moore)
 
     # Stencils.distance_zones(moore)
@@ -34,7 +34,7 @@ end
 
 @testset "Window" begin
     @test Window{1}() == Window{1,2}()
-    window = Window{1}(1, SVector(init[1:3, 1:3]...))
+    window = Window{1}(SVector(init[1:3, 1:3]...), 1)
     @test isbits(window)
     @test diameter(window) == 3
     @test window[1] == 0
@@ -46,18 +46,18 @@ end
     @test offsets(window) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
                                      (1, 0), (-1, 1), (0, 1), (1, 1))
 
-    window2 = Stencils.rebuild(window, 1, SVector(win2...))
+    window2 = Stencils.rebuild(window, SVector(win2...), 1)
     @test neighbors(window2) == SVector(win2...)
 
-    @test sum(Window{1}(1, win1)) == 1
-    @test sum(Window{1}(1, win2)) == 8
-    @test sum(Window{1}(1, win3)) == 5
+    @test sum(Window{1}(win1, 1)) == 1
+    @test sum(Window{1}(win2, 1)) == 8
+    @test sum(Window{1}(win3, 1)) == 5
 end
 
 @testset "VonNeumann" begin
     h = VonNeumann{1}()
     A = StencilArray(init, h)
-    vonneumann = Stencils.rebuild(h, 1, neighbors(A, (2, 2))) 
+    vonneumann = Stencils.rebuild(h, neighbors(A, (2, 2)), 1) 
     @test offsets(vonneumann) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(vonneumann) == 1
     @test diameter(vonneumann) == 3
@@ -185,7 +185,7 @@ end
         @test Kernel(Window{1,2}(), SMatrix{3,3}(reshape(1:9, 3, 3))) == 
             Kernel(SMatrix{3,3}(reshape(1:9, 3, 3)))
             Kernel(reshape(1:9, 3, 3))
-        k = Kernel(Window{1,2}(5, kern), SMatrix{3,3}(reshape(1:9, 3, 3)))
+        k = Kernel(Window{1,2}(kern, 5), SMatrix{3,3}(reshape(1:9, 3, 3)))
         @test kernelproduct(k) == sum((1:9).^2)
         @test neighbors(k) == SVector{9}(1:9)
         @test offsets(k) === SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (0, 0),
@@ -195,11 +195,11 @@ end
     end
     @testset "Moore" begin
         vals = SVector(1:4..., 6:9...)
-        k = Kernel(Moore{1,2}(4, vals), vals)
+        k = Kernel(Moore{1,2}(vals, 4), vals)
         @test kernelproduct(k) === sum(vals .^ 2)
         # Nested arrays work too
         vals2 = map(x -> SVector((x, 2x)), vals)
-        k2 = Kernel(Moore{1,2}(4, vals2), vals)
+        k2 = Kernel(Moore{1,2}(vals2, 4), vals)
         @test kernelproduct(k2) === sum(map((v2, v) -> v2 .* v, vals2, vals))
     end
     @testset "Positional" begin
@@ -207,7 +207,7 @@ end
         off = ((0,-1),(-1,0),(1,0),(0,1))
         hood = Positional{off,1,2,4,}()
         vals = SVector(map(I -> win[I...], indices(hood, (2, 2))))
-        k = Stencils.rebuild(Kernel(hood, 1:4), 1, vals)
+        k = Stencils.rebuild(Kernel(hood, 1:4), vals, 1)
         @test kernelproduct(k) === 1 * 2 + 2 * 4 + 3 * 6 + 4 * 8 === 60
     end
     @testset "Adapt" begin

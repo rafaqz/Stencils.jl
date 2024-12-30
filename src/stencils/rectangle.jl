@@ -11,17 +11,17 @@ specified with pulles of offsets around the center point,
 one for each dimension.
 """
 struct Rectangle{O,R,N,L,T} <: Stencil{R,N,L,T}
-    center::T
     neighbors::SVector{L,T}
-    function Rectangle{O,R,N,L,T}(center::T, neighbors::SVector{L,T}) where {O,R,N,L,T} 
-        new{O,R,N,L,T}(center, neighbors)
+    center::T
+    function Rectangle{O,R,N,L,T}(neighbors::SVector{L,T}, center::T) where {O,R,N,L,T} 
+        new{O,R,N,L,T}(neighbors, center)
     end
 end
-Rectangle{O,R,N,L}(center::T, neighbors::SVector{L,T}) where {O,R,N,L,T} = 
-    Rectangle{O,R,N,L,T}(center, neighbors)
+Rectangle{O,R,N,L}(neighbors::SVector{L,T}, center::T) where {O,R,N,L,T} = 
+    Rectangle{O,R,N,L,T}(neighbors, center)
 Rectangle{O,R,N,L}() where {O,R,N,L} = 
-    Rectangle{O,R,N,L}(nothing, SVector(ntuple(_ -> nothing, L)))
-function Rectangle{O}(center, args::SVector) where O
+    Rectangle{O,R,N,L}(SVector(ntuple(_ -> nothing, L)), nothing)
+function Rectangle{O}(args::SVector, center) where O
     all(map(o -> length(o) == 2, O)) ||
         throw(ArgumentError("All offset tuples must have length `2`, got $O"))
     N = length(O)
@@ -29,7 +29,7 @@ function Rectangle{O}(center, args::SVector) where O
         max(map(abs, o)...)
     end
     L = prod(length ∘ splat(:), O)
-    Rectangle{O,R,N,L}(center, args)
+    Rectangle{O,R,N,L}(args, center)
 end
 function Rectangle{O}() where O
     all(map(o -> length(o) == 2, O)) ||
@@ -51,6 +51,6 @@ function ConstructionBase.constructorof(::Type{Rectangle{O,R,N,L,T}}) where {O,R
     Rectangle{O,R,N,L}
 end
 
-@inline function rebuild(::Rectangle{O,R,N,L}, center, neighbors) where {O,R,N,L}
-    Rectangle{O,R,N,L}(center, neighbors)
+@inline function rebuild(::Rectangle{O,R,N,L}, neighbors, center) where {O,R,N,L}
+    Rectangle{O,R,N,L}(neighbors, center)
 end
