@@ -53,3 +53,5 @@ indices(layered::Layered, I::Tuple) = map(l -> indices(l, I), layered)
 
 _zero_values(::Type{T}, l::Layered) where T =
     map(l -> _zero_values(T, l), layers(l))
+_zero_center(::Type{T}, l::Layered) where T =
+    map(l -> _zero_center(T, l), layers(l))
