@@ -1,6 +1,7 @@
 abstract type AbstractKernelStencil{R,N,L,T,H} <: Stencil{R,N,L,T} end
 
 neighbors(hood::AbstractKernelStencil) = neighbors(stencil(hood))
+center(hood::AbstractKernelStencil) = center(stencil(hood))
 offsets(::Type{<:AbstractKernelStencil{<:Any,<:Any,<:Any,<:Any,H}}) where H = offsets(H)
 positions(hood::AbstractKernelStencil, I::Tuple) = positions(stencil(hood), I)
 
@@ -116,8 +117,8 @@ end
 
 # We *dont* want `rebuild` to trigger kernel function rebuilds
 # so we can update the neighborhood with no runtime cost
-function rebuild(n::Kernel{R,N,L}, neighbors,center) where {R,N,L}
-    hood = rebuild(stencil(n), neighbors,center)
+function rebuild(n::Kernel{R,N,L}, neighbors, center) where {R,N,L}
+    hood = rebuild(stencil(n), neighbors, center)
     return Kernel{R,N,L,eltype(hood),typeof(n.f),typeof(hood),typeof(kernel(n))}(n.f, hood, kernel(n))
 end
 
