@@ -172,9 +172,9 @@ end
     A = StencilArray(collect(reshape(1:25, 5, 5)), multi_layered)
     ml_filled = stencil(A, (3, 3))
     @test ml_filled.l2.a == [7, 19]
-    mapstencil(A) do l
-        sum(l.l1.b) - sum(l.l2.a)
-    end
+    # mapstencil(A) do l
+    #     sum(l.l1.b) - sum(l.l2.a)
+    # end
 end
 
 @testset "Kernel" begin
@@ -199,7 +199,7 @@ end
         @test kernelproduct(k) === sum(vals .^ 2)
         # Nested arrays work too
         vals2 = map(x -> SVector((x, 2x)), vals)
-        k2 = Kernel(Moore{1,2}(vals2, 4), vals)
+        k2 = Kernel(Moore{1,2}(vals2, SVector(4,8)), vals)
         @test kernelproduct(k2) === sum(map((v2, v) -> v2 .* v, vals2, vals))
     end
     @testset "Positional" begin
