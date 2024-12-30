@@ -36,6 +36,7 @@ These can be called on any `<: Stencil` object, and `Layered`.
 ```@docs
 stencil
 neighbors
+center
 offsets
 indices
 distances
