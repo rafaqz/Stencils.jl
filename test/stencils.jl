@@ -79,7 +79,7 @@ end
 @testset "Annulus" begin
     h = Annulus{1}()
     A = StencilArray(init, h)
-    annulus = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    annulus = Stencils.rebuild(h, neighbors(A, (2, 2)), 0)
     @test offsets(annulus) == SVector((-1, -1), (0, -1), (1, -1), (-1, 0), (1, 0), (-1, 1),
         (0, 1), (1, 1))
     @test radius(annulus) == 1
@@ -89,6 +89,7 @@ end
     @test length(annulus) == 8
     @test eltype(annulus) == Int
     @test neighbors(annulus) == SVector(0, 1, 0, 0, 1, 0, 1, 1)
+    @test center(annulus) == 0
     @test sum(neighbors(annulus)) == sum(annulus) == 4
     annulus2 = Annulus{2}()
     @test offsets(annulus2) == SVector((-1, -2), (0, -2), (1, -2), (-2, -1), (2, -1),
@@ -98,7 +99,7 @@ end
 @testset "Ordinal" begin
     h = Ordinal{1}()
     A = StencilArray(init, h)
-    ordinal = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    ordinal = Stencils.rebuild(h, neighbors(A, (2, 2)), 0)
     @test offsets(ordinal) == SVector((-1, -1), (1, -1), (-1, 1), (1, 1))
     @test radius(ordinal) == 1
     @test diameter(ordinal) == 3
@@ -107,6 +108,7 @@ end
     @test length(ordinal) == 4
     @test eltype(ordinal) == Int
     @test neighbors(ordinal) == SVector(0, 0, 0, 1)
+    @test center(ordinal) == 0
     @test sum(neighbors(ordinal)) == sum(ordinal) == 1
     ordinal2 = Ordinal{2}()
     @test offsets(ordinal2) == SVector((-2, -2), (2, -2), (-2, 2), (2, 2))
@@ -115,7 +117,7 @@ end
 @testset "Cardinal" begin
     h = Cardinal{1}()
     A = StencilArray(init, h)
-    cardinal = Stencils.rebuild(h, neighbors(A, (2, 2)))
+    cardinal = Stencils.rebuild(h, neighbors(A, (2, 2)), 0)
     @test offsets(cardinal) == SVector((0, -1), (-1, 0), (1, 0), (0, 1))
     @test radius(cardinal) == 1
     @test diameter(cardinal) == 3
@@ -124,6 +126,7 @@ end
     @test length(cardinal) == 4
     @test eltype(cardinal) == Int
     @test neighbors(cardinal) == SVector(1, 0, 1, 1)
+    @test center(cardinal) == 0
     @test sum(neighbors(cardinal)) == sum(cardinal) == 3
     cardinal2 = Cardinal{2}()
     @test offsets(cardinal2) == SVector((0, -2), (-2, 0), (2, 0), (0, 2))
