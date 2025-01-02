@@ -115,20 +115,28 @@ A donut or hollowed spherical stencil
 """
 struct Annulus{RO,RI,N,L,T} <: Stencil{RO,N,L,T}  # Inner radius is ignored for Stencil type
     neighbors::SVector{L,T}
-    Annulus{RO,RI,N,L,T}(neighbors::StaticVector{L,T}) where {RO,RI,N,L,T} = new{RO,RI,N,L,T}(neighbors)
+    center::T
+    Annulus{RO,RI,N,L,T}(neighbors::StaticVector{L,T}, center::T) where {RO,RI,N,L,T} = new{RO,RI,N,L,T}(neighbors, center)
 end
-Annulus{RO,RI,N,L}(neighbors::StaticVector{L,T}) where {RO,RI,N,L,T} = Annulus{RO,RI,N,L,T}(neighbors)
-Annulus{RO,RI,N,L}() where {RO,RI,N,L} = Annulus{RO,RI,N,L}(SVector(ntuple(_ -> nothing, L)))
-function Annulus{RO,RI,N}(args::StaticVector...) where {RO,RI,N}
+Annulus{RO,RI,N,L}(neighbors::StaticVector{L,T}, center::T) where {RO,RI,N,L,T} = Annulus{RO,RI,N,L,T}(neighbors, center)
+function Annulus{RO,RI,N}(args::StaticVector, center) where {RO,RI,N}
     L = length(offsets(Annulus{RO,RI,N}))
-    Annulus{RO,RI,N,L}(args...)
+    Annulus{RO,RI,N,L}(args, center)
 end
-Annulus{RO}(args::StaticVector...) where {RO} = Annulus{RO,RO - 1,2}(args...)
-Annulus{RO,RI}(args::StaticVector...) where {RO,RI} = Annulus{RO,RI,2}(args...)
-Annulus(args::StaticVector...; outer_radius=2, inner_radius=1, ndims=2) = Annulus{outer_radius,inner_radius,ndims}(args...)
+Annulus{RO,RI}(args::StaticVector) where {RO,RI} = Annulus{RO,RI,2}(args, center)
+Annulus{RO}(args::StaticVector) where {RO} = Annulus{RO,RO - 1,2}(args, center)
+Annulus(args::StaticVector, center; outer_radius=2, inner_radius=1, ndims=2) = Annulus{outer_radius,inner_radius,ndims}(args, center)
+
+Annulus{RO,RI,N,L}() where {RO,RI,N,L} = Annulus{RO,RI,N,L}(SVector(ntuple(_ -> nothing, L)), nothing)
+function Annulus{RO,RI,N}() where {RO,RI,N}
+    L = length(offsets(Annulus{RO,RI,N}))
+    Annulus{RO,RI,N,L}()
+end
+Annulus{RO,RI}() where {RO,RI} = Annulus{RO,RI,2}()
+Annulus{RO}() where {RO} = Annulus{RO,RO - 1,2}()
 Annulus(outer_radius::Int, inner_radius::Int=outer_radius - 1, ndims::Int=2) = Annulus{outer_radius,inner_radius,ndims}()
 
-@inline Stencils.rebuild(n::Annulus{RO,RI,N,L}, neighbors) where {RO,RI,N,L} = Annulus{RO,RI,N,L}(neighbors)
+@inline Stencils.rebuild(::Annulus{RO,RI,N,L}, neighbors, center) where {RO,RI,N,L} = Annulus{RO,RI,N,L}(neighbors, center)
 
 @generated function offsets(::Type{<:Annulus{RO,RI,N}}) where {RO,RI,N}
     offsets_expr = Expr(:tuple)

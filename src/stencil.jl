@@ -8,8 +8,8 @@ They reduce the structure and dimensions of the neighborhood into a
 Stencil objects are updated to contain the neighbors for an array index.
 
 This design is so that user functions can be passed a single object from
-which they can retrieve neighbors, offsets, distances to neighbors and other
-information.
+which they can retrieve center, neighbors, offsets, distances to neighbors
+and other information.
 
 Stencils also provide a range of compile-time utility funcitons like
 `distances` and `offsets`.
@@ -96,6 +96,13 @@ end
 @inline indices(hood::Stencil{<:Any,N}, I::NTuple{N}) where N = map(O -> map(+, O, I), offsets(hood))
 
 Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offsets(hood)[i]) + center
+
+"""
+    center(x::Stencil)
+
+Return the value of the central cell a stencil is offset around. It may or may not be part of the stencil itself.
+"""
+center(hood::Stencil) = getfield(hood, :center)
 
 """
     distances(hood::Stencil)
@@ -225,21 +232,29 @@ macro stencil(name, description)
     struct_expr = quote
         struct $name{R,N,L,T} <: Stencil{R,N,L,T}
             neighbors::SVector{L,T}
-            $name{R,N,L,T}(neighbors::StaticVector{L,T}) where {R,N,L,T} = new{R,N,L,T}(neighbors)
+            center::T
+            $name{R,N,L,T}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = new{R,N,L,T}(neighbors,center)
         end
     end
     func_exprs = quote
-        $name{R,N,L}(neighbors::StaticVector{L,T}) where {R,N,L,T} = $name{R,N,L,T}(neighbors)
-        $name{R,N,L}() where {R,N,L} = $name{R,N,L}(SVector(ntuple(_ -> nothing, L)))
-        function $name{R,N}(args::StaticVector...) where {R,N}
+        
+        # Filled stencils
+        $name{R,N,L}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors,center)
+        $name{R,N}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors,center)
+        $name{R}(args::StaticVector, center) where R = $name{R,2}(args, center)
+        $name(args::StaticVector, center; radius=1, ndims=2) = $name{radius,ndims}(args, center)
+
+        # Empty stencils
+        $name{R,N,L}() where {R,N,L} = $name{R,N,L}(SVector(ntuple(_ -> nothing, L)), nothing)
+        function $name{R,N}() where {R,N}
             L = length(offsets($name{R,N}))
-            $name{R,N,L}(args...)
+            $name{R,N,L}()
         end
-        $name{R}(args::StaticVector...) where R = $name{R,2}(args...)
-        $name(args::StaticVector...; radius=1, ndims=2) = $name{radius,ndims}(args...)
+        $name{R}() where R = $name{R,2}()
+        $name(; radius=1, ndims=2) = $name{radius,ndims}()
         $name(radius::Int, ndims::Int=2) = $name{radius,ndims}()
 
-        @inline Stencils.rebuild(n::$name{R,N,L}, neighbors) where {R,N,L} = $name{R,N,L}(neighbors)
+        @inline Stencils.rebuild(n::$name{R,N,L}, neighbors, center) where {R,N,L} = $name{R,N,L}(neighbors, center)
     end
     return Expr(:block, :(Base.@doc $docstring $struct_expr), func_exprs)
 end

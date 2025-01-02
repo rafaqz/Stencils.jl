@@ -26,8 +26,11 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianInde
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
     stencil(stencil(A), A, I)
 Base.@propagate_inbounds stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(hood, neighbors(hood, A, I))
+    rebuild(hood, neighbors(hood, A, I), _center(hood, A, I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) = A.stencil
+
+@inline _center(::Stencil, A::AbstractStencilArray, I::CartesianIndex) = A[I]
+@inline _center(hood::Layered, A::AbstractStencilArray, I::CartesianIndex) = map(l -> _center(l, A, I), hood)
 
 """
     unsafe_stencil(x, A::AbstractArray, I) => Stencil
@@ -39,7 +42,7 @@ with the assumption that `I` is inbounds.
 @inline unsafe_stencil(A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_stencil(stencil(A), A, I)
 @inline unsafe_stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(hood, unsafe_neighbors(hood, A, I))
+    rebuild(hood, unsafe_neighbors(hood, A, I), _center(hood, A, I))
 
 """
     boundary(A::AbstractStencilArray)
