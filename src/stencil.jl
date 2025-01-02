@@ -100,7 +100,7 @@ Base.@propagate_inbounds indexat(hood::Stencil, center, i) = CartesianIndex(offs
 """
     center(x::Stencil)
 
-Return the value of the central cell in the stencil.
+Return the value of the central cell a stencil is offset around. It may or may not be part of the stencil itself.
 """
 center(hood::Stencil) = getfield(hood, :center)
 
