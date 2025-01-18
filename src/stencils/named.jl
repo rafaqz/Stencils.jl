@@ -42,15 +42,16 @@ the first coordinate, e.g. `1`, `2` or `3`.
 """
 struct NamedStencil{K,O,R,N,L,T} <: Stencil{R,N,L,T}
     neighbors::SVector{L,T}
-    function NamedStencil{K,O,R,N,L,T}(neighbors::SVector{L,T}) where {K,O,R,N,L,T}
+    center::T
+    function NamedStencil{K,O,R,N,L,T}(neighbors::SVector{L,T},center::T) where {K,O,R,N,L,T}
         length(K) == length(O) == L || throw(ArgumentError("Length of keys must match length of offsets and L parameter"))
-        new{K,O,R,N,L,T}(neighbors)
+        new{K,O,R,N,L,T}(neighbors, center)
     end
 end
-NamedStencil{K,O,R,N,L}(neighbors::SVector{L,T}) where {K,O,R,N,L,T} =
-    NamedStencil{K,O,R,N,L,T}(neighbors)
+NamedStencil{K,O,R,N,L}(neighbors::SVector{L,T},center::T) where {K,O,R,N,L,T} =
+    NamedStencil{K,O,R,N,L,T}(neighbors, center)
 NamedStencil{K,O,R,N,L}() where {K,O,R,N,L} =
-    NamedStencil{K,O,R,N,L}(SVector(ntuple(_ -> nothing, L)))
+    NamedStencil{K,O,R,N,L}(SVector(ntuple(_ -> nothing, L)), nothing)
 function NamedStencil{K,O}() where {K,O}
     N = length(first(O))
     R = _positional_radii(N, O)
@@ -77,8 +78,8 @@ end
 
 offsets(::Type{<:NamedStencil{<:Any,O}}) where O = SVector(O)
 
-@inline function rebuild(n::NamedStencil{K,O,R,N,L}, neighbors) where {K,O,R,N,L}
-    NamedStencil{K,O,R,N,L}(neighbors)
+@inline function rebuild(::NamedStencil{K,O,R,N,L}, neighbors, center) where {K,O,R,N,L}
+    NamedStencil{K,O,R,N,L}(neighbors, center)
 end
 
 NamedStencil(s::Cardinal) = NamedStencil{(:E, :S, :N, :W)}(s)

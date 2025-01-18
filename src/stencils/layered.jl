@@ -39,11 +39,11 @@ layers(stencil::Layered) = Base.getfield(stencil, :layers)
 @inline offsets(::Type{<:Layered{R,N,L,T,La}}) where {R,N,L,T,La} =
     map(p -> offsets(p), tuple_contents(La))
 
-@inline function rebuild(h::Layered{R,N,L,T}, layerneighbors) where {R,N,L,T}
-    Layered{R,N,L,T}(map(rebuild, layers(h), layerneighbors))
+@inline function rebuild(h::Layered{R,N,L,T}, layerneighbors, centers) where {R,N,L,T}
+    Layered{R,N,L,T}(map(rebuild, layers(h), layerneighbors, centers))
 end
 
-for f in (:neighbors, :offsets, :cartesian_offsets, :distances, :distance_zones)
+for f in (:center, :neighbors, :offsets, :cartesian_offsets, :distances, :distance_zones)
     @eval $f(layered::Layered) = map($f, layered)
 end
 
@@ -53,3 +53,5 @@ indices(layered::Layered, I::Tuple) = map(l -> indices(l, I), layered)
 
 _zero_values(::Type{T}, l::Layered) where T =
     map(l -> _zero_values(T, l), layers(l))
+_zero_center(::Type{T}, l::Layered) where T =
+    map(l -> _zero_center(T, l), layers(l))
