@@ -148,6 +148,24 @@ Base.@propagate_inbounds Base.getindex(hood::Stencil{<:Any,<:Any,<:Any,T}, i::In
     neighbors(hood)[i]::T
 Base.parent(hood::Stencil) = neighbors(hood)
 
+"""
+    merge(stencils::Stencil...)
+
+Merge multiple stencils into a single `Positional` stencil.
+
+Dimensionality must be the same for all stencils but radus may differ.
+"""
+Base.merge(a::Stencil) = a 
+@generated function Base.merge(a::Stencil{<:Any,N}, b::Stencil{<:Any,N}) where N
+    expr = Expr(:tuple)
+    expr.args = sort(union(offsets(a), offsets(b)))
+    :(Positional($expr))
+ end
+Base.merge(a::Stencil, b::Stencil, c::Stencil, args::Stencil...) = 
+    merge(merge(a, b), c, args...)
+Base.merge(a::Stencil{<:Any,N1}, b::Stencil{<:Any,N2}) where {N1,N2} =
+    throw(ArgumentError("Stencils must have the same dimensionality to merge. Got $N1 and $N2"))
+
 # Show
 function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,N}
     rs = _radii(Val{N}(), R)
@@ -163,7 +181,6 @@ function Base.show(io::IO, mime::MIME"text/plain", hood::Stencil{R,N}) where {R,
         end
     end
 end
-
 function Base.show(io::IO, hood::Stencil{R,N}) where {R,N}
     show(io, typeof(hood))
     if !isnothing(neighbors(hood))
