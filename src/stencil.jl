@@ -160,7 +160,7 @@ Base.merge(a::Stencil) = a
     expr = Expr(:tuple)
     expr.args = sort(union(offsets(a), offsets(b)))
     :(Positional($expr))
- end
+end
 Base.merge(a::Stencil, b::Stencil, c::Stencil, args::Stencil...) = 
     merge(merge(a, b), c, args...)
 Base.merge(a::Stencil{<:Any,N1}, b::Stencil{<:Any,N2}) where {N1,N2} =
