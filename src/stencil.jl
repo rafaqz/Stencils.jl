@@ -153,7 +153,7 @@ Base.parent(hood::Stencil) = neighbors(hood)
 
 Merge multiple stencils into a single `Positional` stencil.
 
-Dimensionality must be the same for all stencils but radus may differ.
+Dimensionality must be the same for all stencils but radii may differ.
 """
 Base.merge(a::Stencil) = a 
 @generated function Base.merge(a::Stencil{<:Any,N}, b::Stencil{<:Any,N}) where N
