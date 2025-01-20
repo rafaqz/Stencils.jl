@@ -87,6 +87,14 @@ end
 NamedStencil(s::Cardinal) = NamedStencil{(:E, :S, :N, :W)}(s)
 NamedStencil(s::Ordinal) = NamedStencil{(:SE, :NE, :SW, :NW)}(s)
 
+"""
+    merge(stencils::NamedStencil...)
+
+Merge multiple named stencils into a single `NamedStencil`.
+
+Dimensionality must be the same for all stencils, and
+all named stencils must have unique names and offsets.
+"""
 function Base.merge(a::NamedStencil{<:Any,<:Any,<:Any,N}, b::NamedStencil{<:Any,<:Any,<:Any,N}) where N
 
     names_a = _names(a)
@@ -101,5 +109,12 @@ function Base.merge(a::NamedStencil{<:Any,<:Any,<:Any,N}, b::NamedStencil{<:Any,
     nb = NamedTuple{names_b}(off_b)
     nt = merge(na, nb)
 
-    NamedStencil(nt)
+    snt = _sortvalues(nt)
+
+    NamedStencil(snt)
+end
+
+function _sortvalues(nt::NamedTuple{KS}) where {KS}
+    t = Tuple(sort(collect(KS), by=Base.Fix1(getfield, nt)))
+    NamedTuple{t}(nt)
 end

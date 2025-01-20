@@ -329,6 +329,7 @@ end
         ns2 = NamedStencil(; south=(-1, 0), east=(0, 1))
         ns = merge(ns1, ns2)
         @test length(ns) == 4
+        @test issorted(offsets(ns))
 
         windrose = merge(NamedStencil(Cardinal(3)), NamedStencil(Ordinal(2)))
         @test length(windrose) == 8
