@@ -310,3 +310,33 @@ end
         @test isbits(Adapt.adapt(SVector{9}, st))
     end
 end
+
+@testset "Merge" begin
+    @testset "Positional" begin
+        p = merge(Horizontal())
+        @test p === Horizontal()
+
+        p = merge(Horizontal(), Vertical())
+        @test issorted(offsets(p))
+        @test length(p) == 5  # center was merged
+
+        @test_throws ArgumentError merge(Horizontal(1,3), Horizontal())
+    end
+    @testset "Named" begin
+        ns1 = NamedStencil(; west=(0, -1), north=(1, 0))
+        @test merge(ns1) === ns1
+
+        ns2 = NamedStencil(; south=(-1, 0), east=(0, 1))
+        ns = merge(ns1, ns2)
+        @test length(ns) == 4
+
+        windrose = merge(NamedStencil(Cardinal(3)), NamedStencil(Ordinal(2)))
+        @test length(windrose) == 8
+
+        ns3 = NamedStencil(; center=(0, 0))
+        ns = merge(ns1, ns2, ns3)
+        @test length(ns) == 5
+
+        @test_throws ArgumentError merge(ns1, ns1)
+    end
+end
