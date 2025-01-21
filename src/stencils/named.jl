@@ -71,6 +71,8 @@ NamedStencil{K}(stencil::Stencil) where K = NamedStencil{K,Tuple(offsets(stencil
 Base.getproperty(a::NamedStencil{K}, x::Symbol) where K = getproperty(NamedTuple{K}(values(a)), x)
 Base.getindex(a::NamedStencil, x::Symbol) = getproperty(a, x)
 Base.propertynames(a::NamedStencil{K}) where K = K
+_names(a::Type{NamedStencil{K,O,R,N,L,T}}) where {K,O,R,N,L,T} = K
+_names(a::NamedStencil) = _names(typeof(a))
 
 function ConstructionBase.constructorof(::Type{NamedStencil{K,O,R,N,L}}) where {K,O,R,N,L}
     NamedStencil{K,O,R,N,L}
@@ -84,3 +86,35 @@ end
 
 NamedStencil(s::Cardinal) = NamedStencil{(:E, :S, :N, :W)}(s)
 NamedStencil(s::Ordinal) = NamedStencil{(:SE, :NE, :SW, :NW)}(s)
+
+"""
+    merge(stencils::NamedStencil...)
+
+Merge multiple named stencils into a single `NamedStencil`.
+
+Dimensionality must be the same for all stencils, and
+all named stencils must have unique names and offsets.
+"""
+function Base.merge(a::NamedStencil{<:Any,<:Any,<:Any,N}, b::NamedStencil{<:Any,<:Any,<:Any,N}) where N
+
+    names_a = _names(a)
+    names_b = _names(b)
+    isdisjoint(names_a, names_b) || throw(ArgumentError("Stencils have overlapping names"))
+
+    off_a = offsets(a)
+    off_b = offsets(b)
+    isdisjoint(off_a, off_b) || throw(ArgumentError("Named stencils have overlapping offsets"))
+
+    na = NamedTuple{names_a}(off_a)
+    nb = NamedTuple{names_b}(off_b)
+    nt = merge(na, nb)
+
+    snt = _sortvalues(nt)
+
+    NamedStencil(snt)
+end
+
+function _sortvalues(nt::NamedTuple{KS}) where {KS}
+    t = Tuple(sort(collect(KS), by=Base.Fix1(getfield, nt)))
+    NamedTuple{t}(nt)
+end

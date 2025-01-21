@@ -45,6 +45,7 @@ indices
 distances
 radius
 diameter
+merge
 Stencils.distance_zones
 Stencils.kernel
 Stencils.kernelproduct
