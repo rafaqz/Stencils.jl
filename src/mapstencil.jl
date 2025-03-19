@@ -11,13 +11,18 @@ $STENCILARRAY_KEYWORDS
 
 The result is returned as a new array.
 """
-function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
+function mapstencil(
+    f, source::AbstractStencilArray{<:Any,T,N}, args::AbstractArray...
+) where {T,N}
     _checksizes((source, args...))
     T_return = _return_type(f, source, args...)
     dest = similar(parent(source), T_return, size(source))
     return mapstencil!(f, dest, source, args...)
 end
-function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...)
+function mapstencil(
+    f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; 
+    kw...
+)
     sa = StencilArray(A, hood; kw...)
     T_return = _return_type(f, sa, args...)
     dest = if padding(sa) isa Halo{:in}
@@ -33,7 +38,7 @@ function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractA
     return mapstencil!(f, dest, sa, args...)
 end
 
-function _return_type(f, A::AbstractStencilArray{<:Any,<:Any,T}, args...) where T
+function _return_type(f, A::AbstractStencilArray{<:Any,T}, args...) where T
     st = stencil(A)
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
@@ -76,14 +81,14 @@ function mapstencil!(f, A::SwitchingStencilArray, B::AbstractStencilArray, args:
     return switch(A)
 end
 function mapstencil!(
-    f, dest, source::AbstractStencilArray{S}, args::AbstractArray...
-) where S
+    f, dest, source::AbstractStencilArray, args::AbstractArray...
+)
     _checksizes((dest, source, args...))
     update_boundary!(source)
 
     backend = KernelAbstractions.get_backend(parent(source))
     workgroups = 64 # 64 seems like a sweet spot for both CPU and GPU ?
-    sz = tuple_contents(S)
+    sz = size(source)
 
     # This is awful but the KernelAbstractions kernel 
     # doesn't seem to be type stable with splatted args.

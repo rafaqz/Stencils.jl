@@ -5,7 +5,7 @@
 Supertype for arrays with a [`Stencil`](@ref),
 a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 """
-abstract type AbstractStencilArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
+abstract type AbstractStencilArray{R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
 
 """
     stencil(A::AbstractStencilArray)
@@ -151,9 +151,9 @@ end
 # We cant do much here - the caller needs a bounds check
 @inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding::Conditional, I::Tuple) = I
 @inline function bounded_index(
-    A::AbstractStencilArray{S}, boundary::Reflect, padding::Conditional, I::Tuple
-) where S
-    map(I, tuple_contents(S)) do i, s
+    A::AbstractStencilArray, boundary::Reflect, padding::Conditional, I::Tuple
+)
+    map(I, size(A)) do i, s
         if i < 1
             2 - i
         elseif i > s
@@ -164,9 +164,9 @@ end
     end
 end
 @inline function bounded_index(
-    A::AbstractStencilArray{S}, boundary::Wrap, padding::Conditional, I::Tuple
+    A::AbstractStencilArray, boundary::Wrap, padding::Conditional, I::Tuple
 ) where S
-    map(I, tuple_contents(S)) do i, s
+    map(I, size(A)) do i, s
         if i < 1
             i + s
         elseif i > s
@@ -181,8 +181,8 @@ end
     unsafe_getneighbor(A, boundary(A), padding(A), I)
 end
 @inline function unsafe_getneighbor(
-    A::AbstractStencilArray{<:Any,R}, ::BoundaryCondition, pad::Padding, I::Tuple
-) where R
+    A::AbstractStencilArray, ::BoundaryCondition, pad::Padding, I::Tuple
+)
     unsafe_getindex(A, pad, I...)
 end
 
@@ -196,12 +196,14 @@ update_boundary!(A::AbstractStencilArray) =
     update_boundary!(A, padding(A), boundary(A))
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
-update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Use) where {S,R} = A
+update_boundary!(A::AbstractStencilArray{R}, ::Halo, ::Use) where {R} = A
 # Halo needs updating
-@generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::BoundaryCondition) where {S,R}
+@generated function update_boundary!(
+    A::AbstractStencilArray{R,T,N}, ::Halo, bc::BoundaryCondition
+) where {R,T,N}
     expr = Expr(:block)
     i = 1
-    for _ in S.parameters
+    for _ in N
         inds_expr1 = Expr(:tuple)
         inds_expr2 = Expr(:tuple)
         for (i1, P) in enumerate(S.parameters)
@@ -372,7 +374,7 @@ _add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndices{N}) where {R,N} =
 _add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndex{N}) where {R,N} =
     CartesianIndex(ntuple(_ -> R, Val(N))) + I
 
-Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
+Base.size(A::AbstractStencilArray) = _size(padding(A), stencil(A), parent(A))
 
 Base.similar(A::AbstractStencilArray) = similar(parent(A), size(A))
 Base.similar(A::AbstractStencilArray, ::Type{T}) where T = similar(parent(A), T, size(A))
@@ -434,27 +436,24 @@ with neighbors:
  192
 ```
 """
-struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
+struct StencilArray{T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractStencilArray{T,N,A,H,BC,P}
     parent::A
     stencil::H
     boundary::BC
     padding::P
-    function StencilArray{S,R,T,N,A,H,BC,P}(parent::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
+    function StencilArray{R,T,N,A,H,BC,P}(parent::A, h::H, bc::BC, padding::P) where {R,T,N,A,H,BC,P}
         map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
-        return new{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
+        return new{R,T,N,A,H,BC,P}(parent, h, bc, padding)
     end
 end
 function StencilArray(parent::AbstractArray, hood::Union{Stencil{R},Layered{R}}, bc, padding) where R
     padded_parent = pad_array(padding, bc, hood, parent)
-    S = Tuple{_size(padding, hood, padded_parent)...}
-    StencilArray{S,R}(padded_parent, hood, bc, padding)
+    StencilArray{R}(padded_parent, hood, bc, padding)
 end
-StencilArray{S}(parent::AbstractArray, hood::Union{Stencil{R},Layered{R}}, bc, padding) where {S,R} =
-    StencilArray{S,R}(parent, hood, bc, padding)
-StencilArray{S,R}(parent::A, h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N} =
-    StencilArray{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
+StencilArray{R}(parent::A, h::H, bc::BC, padding::P) where {A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N} =
+    StencilArray{R,T,N,A,H,BC,P}(parent, h, bc, padding)
 function StencilArray(parent::AbstractArray{<:Any,N}, stencil=Window{1,N}();
     boundary=Remove(zero(eltype(parent))),
     padding=Conditional(),
@@ -466,10 +465,10 @@ _size(::Conditional, stencil, parent) = size(parent)
 _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
 
 #Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables.
-Base.similar(A::StencilArray{S}) where {S} =
-    StencilArray{S}(similar(parent(A)), stencil(A), boundary(A), padding(A))
-Base.similar(A::StencilArray{S}, ::Type{T}) where {S,T} =
-    StencilArray{S}(similar(parent(A), T), stencil(A), boundary(A), padding(A))
+Base.similar(A::StencilArray) where =
+    StencilArray(similar(parent(A)), stencil(A), boundary(A), padding(A))
+Base.similar(A::StencilArray, ::Type{T}) where T =
+    StencilArray(similar(parent(A), T), stencil(A), boundary(A), padding(A))
 
 function Base.copy(src::StencilArray)
     cp = similar(src)
@@ -477,13 +476,11 @@ function Base.copy(src::StencilArray)
     return cp
 end
 
-function Adapt.adapt_structure(to, A::StencilArray{S}) where S
+function Adapt.adapt_structure(to, A::StencilArray)
     newparent = Adapt.adapt(to, parent(A))
     newstencil = Adapt.adapt(to, stencil(A))
-    StencilArray{S}(newparent, newstencil, boundary(A), padding(A))
+    StencilArray(newparent, newstencil, boundary(A), padding(A))
 end
-
-ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray{S}
 
 # Internals
 """
@@ -492,7 +489,7 @@ ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray
 Abstract supertype for `AbstractStencilArray` that wrap two arrays that
 switch places with each broadcast.
 """
-abstract type AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P} end
+abstract type AbstractSwitchingStencilArray{R,T,N,A,H,BC,P} <: AbstractStencilArray{R,T,N,A,H,BC,P} end
 
 Base.parent(d::AbstractSwitchingStencilArray) = source(d)
 
@@ -542,17 +539,21 @@ end
 
 ```
 """
-struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
+struct SwitchingStencilArray{
+    R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P
+} <: AbstractSwitchingStencilArray{R,T,N,A,H,BC,P}
     source::A
     dest::A
     stencil::H
     boundary::BC
     padding::P
-    function SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source::A, dest::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
+    function SwitchingStencilArray{R,T,N,A,H,BC,P}(
+        source::A, dest::A, h::H, bc::BC, padding::P
+    ) where {R,T,N,A,H,BC,P}
         map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
-        return new{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
+        return new{R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
     end
 end
 
@@ -569,13 +570,12 @@ function SwitchingStencilArray(parent::AbstractArray, hood::StencilOrLayered, bc
     padded_source = pad_array(padding, bc, hood, parent)
     padded_dest = pad_array(padding, bc, hood, parent)
     padded_dest = padded_source === padded_dest ? copy(padded_source) : padded_dest
-    S = Tuple{_size(padding, hood, padded_source)...}
-    return SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
+    return SwitchingStencilArray(padded_source, padded_dest, hood, bc, padding)
 end
-function SwitchingStencilArray{S}(
+function SwitchingStencilArray(
     source::A, dest::A, h::H, bc::BC, padding::P
-) where {S,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N}
-    SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
+) where {A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N}
+    SwitchingStencilArray{R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
 end
 
 """
@@ -583,15 +583,15 @@ end
 
 Swap the source and dest of a `SwitchingStencilArray`.
 """
-switch(A::SwitchingStencilArray{S}) where S =
-    SwitchingStencilArray{S}(dest(A), source(A), stencil(A), boundary(A), padding(A))
+switch(A::SwitchingStencilArray) where S =
+    SwitchingStencilArray(dest(A), source(A), stencil(A), boundary(A), padding(A))
 
 Base.parent(A::SwitchingStencilArray) = source(A)
 
-Base.similar(src::SwitchingStencilArray{S}) where {S} =
-    SwitchingStencilArray{S}(similar(source(src)), similar(dest(src)), stencil(src), boundary(src), padding(src))
-Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} =
-    SwitchingStencilArray{S}(similar(source(src), T), similar(dest(src), T), stencil(src), boundary(src), padding(src))
+Base.similar(src::SwitchingStencilArray) where  =
+    SwitchingStencilArray(similar(source(src)), similar(dest(src)), stencil(src), boundary(src), padding(src))
+Base.similar(src::SwitchingStencilArray, ::Type{T}) where {T} =
+    SwitchingStencilArray(similar(source(src), T), similar(dest(src), T), stencil(src), boundary(src), padding(src))
 
 function Base.copy(src::SwitchingStencilArray)
     cp = similar(src)
@@ -600,10 +600,8 @@ function Base.copy(src::SwitchingStencilArray)
     return cp
 end
 
-function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
+function Adapt.adapt_structure(to, A::SwitchingStencilArray) where S
     newsource = Adapt.adapt(to, A.source)
     newdest = Adapt.adapt(to, A.dest)
-    SwitchingStencilArray{S}(newsource, newdest, stencil(A), boundary(A), padding(A))
+    SwitchingStencilArray(newsource, newdest, stencil(A), boundary(A), padding(A))
 end
-
-ConstructionBase.constructorof(::Type{<:SwitchingStencilArray{S}}) where S = SwitchingStencilArray{S}
