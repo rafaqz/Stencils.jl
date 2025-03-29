@@ -43,12 +43,13 @@ function _return_type(f::F, A::AbstractStencilArray{<:Any,T}, args...) where {F,
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     emptyneighbors = _zero_values(T1, st)
-    emptycenter = zero(T1)
+    emptycenter = _zero_center(T1, st)
     S = typeof(rebuild(st, emptyneighbors, emptycenter))
     return Base._return_type(f, Tuple{S,map(eltype, args)...})
 end
 
 _zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
+_zero_center(::Type{T}, ::Stencil) where T = zero(T)
 
 kernel_setup() = KernelAbstractions.CPU(; static=true), 64
 
@@ -85,11 +86,8 @@ function mapstencil!(
     update_boundary!(source)
 
     backend = KernelAbstractions.get_backend(parent(source))
-    workgroupsize = 64 # 64 seems like a sweet spot for both CPU and GPU ?
-
     kernel! = mapstencil_kernel!(backend)
     kernel!(f, dest, source, args; ndrange=size(dest))
-
     KernelAbstractions.synchronize(backend)
 
     return dest
