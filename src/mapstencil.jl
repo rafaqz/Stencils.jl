@@ -11,13 +11,18 @@ $STENCILARRAY_KEYWORDS
 
 The result is returned as a new array.
 """
-function mapstencil(f, source::AbstractStencilArray{<:Any,<:Any,T,N}, args::AbstractArray...) where {T,N}
+function mapstencil(
+    f::F, source::AbstractStencilArray{<:Any,T,N}, args::AbstractArray...
+) where {F,T,N}
     _checksizes((source, args...))
     T_return = _return_type(f, source, args...)
     dest = similar(parent(source), T_return, size(source))
     return mapstencil!(f, dest, source, args...)
 end
-function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; kw...)
+function mapstencil(
+    f::F, hood::StencilOrLayered, A::AbstractArray, args::AbstractArray...; 
+    kw...
+) where F
     sa = StencilArray(A, hood; kw...)
     T_return = _return_type(f, sa, args...)
     dest = if padding(sa) isa Halo{:in}
@@ -33,15 +38,14 @@ function mapstencil(f, hood::StencilOrLayered, A::AbstractArray, args::AbstractA
     return mapstencil!(f, dest, sa, args...)
 end
 
-function _return_type(f, A::AbstractStencilArray{<:Any,<:Any,T}, args...) where T
+function _return_type(f::F, A::AbstractStencilArray{<:Any,T}, args...) where {F,T}
     st = stencil(A)
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     emptyneighbors = _zero_values(T1, st)
-    emptycenters = _zero_center(T1, st)
-    H = typeof(rebuild(st, emptyneighbors, emptycenters))
-    # Use nasty broadcast mechanism `_return_type` to get the new eltype
-    return Base._return_type(f, Tuple{H,map(eltype, args)...})
+    emptycenter = _zero_center(T1, st)
+    S = typeof(rebuild(st, emptyneighbors, emptycenter))
+    return Base._return_type(f, Tuple{S,map(eltype, args)...})
 end
 
 _zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
@@ -63,75 +67,35 @@ returning a switched version of the array.
 `dest` must either be smaller than `src` by the stencil radius on all
 sides, or be the same size, in which case it is assumed to also be padded.
 """
-function mapstencil!(f, A::SwitchingStencilArray, args::AbstractArray...)
+function mapstencil!(f::F, A::SwitchingStencilArray, args::AbstractArray...) where F
     pd = padding(A) isa Halo ? Halo{:in}() : padding(A)
     src = StencilArray(source(A), stencil(A), boundary(A), pd)
     dst = StencilArray(dest(A), stencil(A), boundary(A), pd)
     mapstencil!(f, dst, src, args...)
     return switch(A)
 end
-function mapstencil!(f, A::SwitchingStencilArray, B::AbstractStencilArray, args::AbstractArray...)
+function mapstencil!(f::F, A::SwitchingStencilArray, B::AbstractStencilArray, args::AbstractArray...) where F
     dst = StencilArray(dest(A), stencil(A), boundary(A), padding(A))
     mapstencil!(f, dst, A, B, args...)
     return switch(A)
 end
 function mapstencil!(
-    f, dest, source::AbstractStencilArray{S}, args::AbstractArray...
-) where S
+    f::F, dest, source::AbstractStencilArray, args::AbstractArray...
+) where F
     _checksizes((dest, source, args...))
     update_boundary!(source)
 
     backend = KernelAbstractions.get_backend(parent(source))
-    workgroups = 64 # 64 seems like a sweet spot for both CPU and GPU ?
-    sz = tuple_contents(S)
-
-    # This is awful but the KernelAbstractions kernel 
-    # doesn't seem to be type stable with splatted args.
-    if length(args) == 0
-        # We use a static kernel size. We have the size
-        # in the type so we may as well use it.
-        kernel! = mapstencil_kerneln0!(backend, workgroups, sz)
-    elseif length(args) == 1
-        kernel! = mapstencil_kerneln1!(backend, workgroups, sz)
-    elseif length(args) == 2
-        kernel! = mapstencil_kerneln2!(backend, workgroups, sz)
-    elseif length(args) == 3
-        kernel! = mapstencil_kerneln3!(backend, workgroups, sz)
-    elseif length(args) == 4
-        kernel! = mapstencil_kerneln4!(backend, workgroups, sz)
-    end
-
-    kernel!(f, dest, source, args...)
-
+    kernel! = mapstencil_kernel!(backend)
+    kernel!(f, dest, source, args; ndrange=size(dest))
     KernelAbstractions.synchronize(backend)
 
     return dest
 end
 
-# TODO remove these if we can make this type stable with a single method
-@kernel function mapstencil_kerneln0!(f, dest, source)
+@kernel function mapstencil_kernel!(f::F, dest, source, args) where F
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I))
-    nothing
-end
-@kernel function mapstencil_kerneln1!(f, dest, source, a1)
-    I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I), a1[I])
-    nothing
-end
-@kernel function mapstencil_kerneln2!(f, dest, source, a1, a2)
-    I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I])
-    nothing
-end
-@kernel function mapstencil_kerneln3!(f, dest, source, a1, a2, a3)
-    I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I], a3[I])
-    nothing
-end
-@kernel function mapstencil_kerneln4!(f, dest, source, a1, a2, a3, a4)
-    I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I), a1[I], a2[I], a3[I], a4[I])
+    @inbounds dest[I] = f(stencil(source, I), map(a -> a[I], args)...)
     nothing
 end
 

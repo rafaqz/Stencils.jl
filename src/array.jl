@@ -5,7 +5,7 @@
 Supertype for arrays with a [`Stencil`](@ref),
 a [`BoundaryCondition`](@ref), and [`Padding`](@ref).
 """
-abstract type AbstractStencilArray{S,R,T,N,A,H,BC,P} <: AbstractArray{T,N} end
+abstract type AbstractStencilArray{R,T,N,A,S,BC,P} <: AbstractArray{T,N} end
 
 """
     stencil(A::AbstractStencilArray)
@@ -25,12 +25,13 @@ Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::Union{CartesianInde
     stencil(A, CartesianIndex(to_indices(A, I)))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray, I::CartesianIndex) =
     stencil(stencil(A), A, I)
-Base.@propagate_inbounds stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(hood, neighbors(hood, A, I), _center(hood, A, I))
+Base.@propagate_inbounds stencil(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
+    rebuild(stencil, neighbors(stencil, A, I), _center(stencil, A, I))
 Base.@propagate_inbounds stencil(A::AbstractStencilArray) = A.stencil
 
 @inline _center(::Stencil, A::AbstractStencilArray, I::CartesianIndex) = A[I]
-@inline _center(hood::Layered, A::AbstractStencilArray, I::CartesianIndex) = map(l -> _center(l, A, I), hood)
+@inline _center(stencil::Layered, A::AbstractStencilArray, I::CartesianIndex) = 
+    map(l -> _center(l, A, I), stencil)
 
 """
     unsafe_stencil(x, A::AbstractArray, I) => Stencil
@@ -41,8 +42,8 @@ with the assumption that `I` is inbounds.
 """
 @inline unsafe_stencil(A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_stencil(stencil(A), A, I)
-@inline unsafe_stencil(hood::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
-    rebuild(hood, unsafe_neighbors(hood, A, I), _center(hood, A, I))
+@inline unsafe_stencil(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
+    rebuild(stencil, unsafe_neighbors(stencil, A, I), _center(stencil, A, I))
 
 """
     boundary(A::AbstractStencilArray)
@@ -60,7 +61,7 @@ padding(A::AbstractStencilArray) = A.padding
 
 """
 
-    neighbors([hood::Stencil,] A::AbstractStencilArray, I) => SArray
+    neighbors([stencil::Stencil,] A::AbstractStencilArray, I) => SArray
 
 Get stencil neighbors from `A` around center `I` as an `SVector`.
 """
@@ -72,7 +73,7 @@ Get stencil neighbors from `A` around center `I` as an `SVector`.
     return @inbounds unsafe_neighbors(stencil, A, I)
 end
 
-function _checkbounds(::Halo, A::AbstractStencilArray{<:Any,R,<:Any,N}, I) where {R,N}
+function _checkbounds(::Halo, A::AbstractStencilArray{R,<:Any,N}, I) where {R,N}
     # Check the corners of the array
     checkbounds(parent(A), I)
     checkbounds(parent(A), I + CartesianIndex(ntuple(_ -> 2R, N)))
@@ -83,7 +84,7 @@ function _checkbounds(::Conditional, A, I)
 end
 
 """
-    unsafe_neighbors([hood::Stencil,] A::AbstractStencilArray, I::CartesianIndex) => SArray
+    unsafe_neighbors([stencil::Stencil,] A::AbstractStencilArray, I::CartesianIndex) => SArray
 
 Get stencil neighbors from `A` around center `I` as an `SVector`, without checking bounds of `I`.
 """
@@ -91,31 +92,31 @@ Get stencil neighbors from `A` around center `I` as an `SVector`, without checki
 @inline unsafe_neighbors(stencil::StencilOrLayered, A::AbstractStencilArray, I::CartesianIndex) =
     unsafe_neighbors(stencil, padding(A), A, I)
 @inline function unsafe_neighbors(
-    hood::Stencil, ::Padding, A::AbstractStencilArray{<:Any,R}, I::CartesianIndex
+    stencil::Stencil, ::Padding, A::AbstractStencilArray{R}, I::CartesianIndex
 ) where R
-    map(indices(hood, I)) do N
+    map(indices(stencil, I)) do N
         unsafe_getneighbor(A, N)
     end
 end
 @inline function unsafe_neighbors(
-    hood::Stencil, ::Conditional, A::AbstractStencilArray{<:Any,R,<:Any,N}, I::CartesianIndex
+    stencil::Stencil, ::Conditional, A::AbstractStencilArray{R,<:Any,N}, I::CartesianIndex
 ) where {R,N}
     # If the stencil corners are in-bounds we don't need bounds checks later
-    radii = CartesianIndex(ntuple(_ -> -R, N))
+    radii = CartesianIndex(ntuple(_ -> -R, Val{N}()))
     if checkbounds(Bool, A, I + radii) && checkbounds(Bool, A, I - radii)
-        map(indices(hood, I)) do N
+        map(indices(stencil, I)) do N
             unsafe_getneighbor(A, N)
         end
     else
-        map(indices(hood, I)) do N
+        map(indices(stencil, I)) do N
             getneighbor(A, N)
         end
     end
 end
 @inline function unsafe_neighbors(
-    hood::Layered, p::Padding, A::AbstractStencilArray, I::CartesianIndex
+    stencil::Layered, p::Padding, A::AbstractStencilArray, I::CartesianIndex
 )
-    map(l -> unsafe_neighbors(l, p, A, I), hood)
+    map(l -> unsafe_neighbors(l, p, A, I), stencil)
 end
 
 """
@@ -151,9 +152,9 @@ end
 # We cant do much here - the caller needs a bounds check
 @inline bounded_index(A::AbstractStencilArray, boundary::Remove, padding::Conditional, I::Tuple) = I
 @inline function bounded_index(
-    A::AbstractStencilArray{S}, boundary::Reflect, padding::Conditional, I::Tuple
-) where S
-    map(I, tuple_contents(S)) do i, s
+    A::AbstractStencilArray, boundary::Reflect, padding::Conditional, I::Tuple
+)
+    map(I, size(A)) do i, s
         if i < 1
             2 - i
         elseif i > s
@@ -164,9 +165,9 @@ end
     end
 end
 @inline function bounded_index(
-    A::AbstractStencilArray{S}, boundary::Wrap, padding::Conditional, I::Tuple
-) where S
-    map(I, tuple_contents(S)) do i, s
+    A::AbstractStencilArray, boundary::Wrap, padding::Conditional, I::Tuple
+)
+    map(I, size(A)) do i, s
         if i < 1
             i + s
         elseif i > s
@@ -181,8 +182,8 @@ end
     unsafe_getneighbor(A, boundary(A), padding(A), I)
 end
 @inline function unsafe_getneighbor(
-    A::AbstractStencilArray{<:Any,R}, ::BoundaryCondition, pad::Padding, I::Tuple
-) where R
+    A::AbstractStencilArray, ::BoundaryCondition, pad::Padding, I::Tuple
+)
     unsafe_getindex(A, pad, I...)
 end
 
@@ -196,21 +197,23 @@ update_boundary!(A::AbstractStencilArray) =
     update_boundary!(A, padding(A), boundary(A))
 # Conditional sets boundary conditions on the fly
 update_boundary!(A::AbstractStencilArray, ::Conditional, ::BoundaryCondition) = A
-update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Use) where {S,R} = A
+update_boundary!(A::AbstractStencilArray{R}, ::Halo, ::Use) where {R} = A
 # Halo needs updating
-@generated function update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, bc::BoundaryCondition) where {S,R}
+@generated function update_boundary!(
+    A::AbstractStencilArray{R,T,N}, ::Halo, bc::BoundaryCondition
+) where {R,T,N}
     expr = Expr(:block)
     i = 1
-    for _ in S.parameters
+    for _ in 1:N
         inds_expr1 = Expr(:tuple)
         inds_expr2 = Expr(:tuple)
-        for (i1, P) in enumerate(S.parameters)
-            if i == i1
+        for n in 1:N
+            if i == n
                 push!(inds_expr1.args, :(Base.OneTo(1:R)))
-                push!(inds_expr2.args, :($P+R+1:$P+2R))
+                push!(inds_expr2.args, :(s[$n]+R+1:s[$n]+2R))
             else
-                push!(inds_expr1.args, :(Base.OneTo($P+2R)))
-                push!(inds_expr2.args, :(Base.OneTo($P+2R)))
+                push!(inds_expr1.args, :(Base.OneTo(s[$n]+2R)))
+                push!(inds_expr2.args, :(Base.OneTo(s[$n]+2R)))
             end
         end
         push!(expr.args, :(Isrc1 = $inds_expr1))
@@ -222,15 +225,16 @@ update_boundary!(A::AbstractStencilArray{S,R}, ::Halo, ::Use) where {S,R} = A
         i += 1
     end
     return quote
+        s = size(A)
         src = parent(A)
         $expr
         return after_update_boundary!(A)
     end
 end
 
-@inline halo_val(A, bc::Remove, I::CartesianIndex) = padval(bc)
-@inline halo_val(A, bc::Union{Wrap,Reflect}, I::CartesianIndex) = begin
-    bI = bounded_index(A, bc, Conditional(), Tuple(I))
+@inline halo_val(A, boundary::Remove, I::CartesianIndex) = padval(boundary)
+@inline halo_val(A, boundary::Union{Wrap,Reflect}, I::CartesianIndex) = begin
+    bI = bounded_index(A, boundary, Conditional(), Tuple(I))
     return A[bI...]
 end
 
@@ -242,17 +246,17 @@ radii(x::Tuple, s::Tuple) = x
 
 
 # Base methods
-function Base.copy!(S::AbstractStencilArray{<:Any,R}, A::AbstractArray) where R
+function Base.copy!(S::AbstractStencilArray{R}, A::AbstractArray) where R
     pad_axes = add_halo(S, axes(S))
     copyto!(parent(S), CartesianIndices(pad_axes), A, CartesianIndices(A))
     return
 end
-function Base.copy!(A::AbstractArray, S::AbstractStencilArray{<:Any,R}) where R
+function Base.copy!(A::AbstractArray, S::AbstractStencilArray{R}) where R
     pad_axes = add_halo(S, axes(S))
     copyto!(A, CartesianIndices(A), parent(S), CartesianIndices(pad_axes))
     return A
 end
-function Base.copy!(dst::AbstractStencilArray{<:Any,RD}, src::AbstractStencilArray{<:Any,RS}) where {RD,RS}
+function Base.copy!(dst::AbstractStencilArray{RD}, src::AbstractStencilArray{RS}) where {RD,RS}
     dst_axes = add_halo(dst, axes(dst))
     src_axes = add_halo(src, axes(src))
     copyto!(
@@ -321,26 +325,26 @@ function Base.show(io::IO, mime::MIME"text/plain", A::AbstractStencilArray)
 end
 
 # Iterate over the parent for `Conditional` padding, 2x faster.
-Base.iterate(A::AbstractStencilArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Conditional}, args...) =
+Base.iterate(A::AbstractStencilArray{<:Any,<:Any,<:Any,<:Any,<:Any,<:Any,<:Conditional}, args...) =
     iterate(parent(A), args...)
 Base.parent(A::AbstractStencilArray) = A.parent
 for f in (:getindex, :view, :dotview)
     unsafe_f = Symbol(string("unsafe_", f))
     @eval begin
         # Base.@propagate_inbounds function Base.$f(
-        #     A::AbstractStencilArray{<:Any,R}, I::Union{Colon,Int64,AbstractArray}...
+        #     A::AbstractStencilArray{R}, I::Union{Colon,Int64,AbstractArray}...
         # ) where R
         #     @boundscheck checkbounds(A, I...)
         #     @inbounds Base.$f(parent(A), I...)
         # end
         Base.@propagate_inbounds function Base.$f(
-            A::AbstractStencilArray{<:Any,R}, i1::Int, Is::Int...
+            A::AbstractStencilArray{R}, i1::Int, Is::Int...
         ) where R
             @boundscheck checkbounds(A, i1, Is...)
             $unsafe_f(A, padding(A), i1, Is...)
         end
         $unsafe_f(A::AbstractStencilArray, I...) = $unsafe_f(A, padding(A), I...)
-        function $unsafe_f(A::AbstractStencilArray{<:Any,R}, ::Halo, I...) where R
+        function $unsafe_f(A::AbstractStencilArray{R}, ::Halo, I...) where R
             @inbounds Base.$f(parent(A), add_halo(A, I)...)
         end
         function $unsafe_f(A::AbstractStencilArray, ::Padding, I...)
@@ -353,7 +357,7 @@ Base.@propagate_inbounds function Base.setindex!(A::AbstractStencilArray, x, I::
     unsafe_setindex!(A, x, I...)
 end
 unsafe_setindex!(A::AbstractStencilArray, x, I...) = unsafe_setindex!(A, padding(A), x, I...)
-function unsafe_setindex!(A::AbstractStencilArray{<:Any,R}, ::Halo, x, I...) where R
+function unsafe_setindex!(A::AbstractStencilArray{R}, ::Halo, x, I...) where R
     @inbounds setindex!(parent(A), x, add_halo(A, I)...)
 end
 function unsafe_setindex!(A::AbstractStencilArray, ::Padding, x, I...)
@@ -365,14 +369,14 @@ add_halo(::Halo, A::AbstractStencilArray, I) = _add_halo(A, I)
 add_halo(::Padding, A::AbstractStencilArray, I) = I
 
 _add_halo(A::AbstractStencilArray, I::Tuple) = map(i -> _add_halo(A, i), I)
-_add_halo(::AbstractStencilArray{<:Any,R}, I::Integer) where R = I + R
-_add_halo(::AbstractStencilArray{<:Any,R}, I::AbstractUnitRange) where R = I .+ R
-_add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndices{N}) where {R,N} =
+_add_halo(::AbstractStencilArray{R}, I::Integer) where R = I + R
+_add_halo(::AbstractStencilArray{R}, I::AbstractUnitRange) where R = I .+ R
+_add_halo(::AbstractStencilArray{R}, I::CartesianIndices{N}) where {R,N} =
     CartesianIndex(ntuple(_ -> R, Val(N))) .+ I
-_add_halo(::AbstractStencilArray{<:Any,R}, I::CartesianIndex{N}) where {R,N} =
+_add_halo(::AbstractStencilArray{R}, I::CartesianIndex{N}) where {R,N} =
     CartesianIndex(ntuple(_ -> R, Val(N))) + I
 
-Base.size(::AbstractStencilArray{S}) where S = tuple_contents(S)
+Base.size(A::AbstractStencilArray) = _size(padding(A), stencil(A), parent(A))
 
 Base.similar(A::AbstractStencilArray) = similar(parent(A), size(A))
 Base.similar(A::AbstractStencilArray, ::Type{T}) where T = similar(parent(A), T, size(A))
@@ -382,8 +386,8 @@ Base.similar(A::AbstractStencilArray, ::Type{T}, I::Tuple{Int,Vararg{Int}}) wher
 
 
 const STENCILARRAY_KEYWORDS = """
-- `boundary`: a [`BoundaryCondition`](@ref) like [`Wrap`](@ref).
-- `padding`: [`Padding`](@ref) like [`Conditional`](@ref) or [`Halo{:in}`](@ref).
+- `boundary`: a [`BoundaryCondition`](@ref) like [`Wrap`](@ref). `Remove()` is the default.
+- `padding`: [`Padding`](@ref) like [`Conditional`](@ref) or [`Halo{:in}`](@ref). `Conditional()` is the default.
 """
 
 """
@@ -400,7 +404,7 @@ Except it can be indexed at any point with `stencil` to return a filled
 
 ## Arguments
 
-- `A`: an AbstractArray
+- `A`: an `AbstractArray`
 - `stencil`: a [`Stencil`](@ref).
 
 ## Keywords
@@ -434,42 +438,45 @@ with neighbors:
  192
 ```
 """
-struct StencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P}
+struct StencilArray{
+    R,T,N,A<:AbstractArray{T,N},S<:Union{Stencil{R},Layered{R}},BC,P
+} <: AbstractStencilArray{R,T,N,A,S,BC,P}
     parent::A
-    stencil::H
+    stencil::S
     boundary::BC
     padding::P
-    function StencilArray{S,R,T,N,A,H,BC,P}(parent::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
-        map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
+    function StencilArray{R,T,N,A,S,BC,P}(
+        parent::A, stencil::S, boundary::BC, padding::P
+    ) where {R,T,N,A,S,BC,P}
+        map(size(parent), _radii(Val{N}(), R)) do s, rs
             max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
-        return new{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
+        return new{R,T,N,A,S,BC,P}(parent, stencil, boundary, padding)
     end
 end
-function StencilArray(parent::AbstractArray, hood::Union{Stencil{R},Layered{R}}, bc, padding) where R
-    padded_parent = pad_array(padding, bc, hood, parent)
-    S = Tuple{_size(padding, hood, padded_parent)...}
-    StencilArray{S,R}(padded_parent, hood, bc, padding)
+function StencilArray(
+    parent::A, stencil::S, boundary::BC, padding::P
+) where {A<:AbstractArray{T,N},S<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N}
+    StencilArray{R,T,N,A,S,BC,P}(parent, stencil, boundary, padding)
 end
-StencilArray{S}(parent::AbstractArray, hood::Union{Stencil{R},Layered{R}}, bc, padding) where {S,R} =
-    StencilArray{S,R}(parent, hood, bc, padding)
-StencilArray{S,R}(parent::A, h::H, bc::BC, padding::P) where {S,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N} =
-    StencilArray{S,R,T,N,A,H,BC,P}(parent, h, bc, padding)
 function StencilArray(parent::AbstractArray{<:Any,N}, stencil=Window{1,N}();
     boundary=Remove(zero(eltype(parent))),
     padding=Conditional(),
 ) where N
-    StencilArray(parent, stencil, boundary, padding)
+    padded_parent = pad_array(padding, boundary, stencil, parent)
+    StencilArray(padded_parent, stencil, boundary, padding)
 end
 
 _size(::Conditional, stencil, parent) = size(parent)
-_size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R = size(parent) .- 2R
+function _size(::Halo, ::Union{Stencil{R},Layered{R}}, parent) where R 
+    size(parent) .- 2R
+end
 
 #Allocates similar array for StencilArray. Assumes that the stencil, boundary and padding are immutables.
-Base.similar(A::StencilArray{S}) where {S} =
-    StencilArray{S}(similar(parent(A)), stencil(A), boundary(A), padding(A))
-Base.similar(A::StencilArray{S}, ::Type{T}) where {S,T} =
-    StencilArray{S}(similar(parent(A), T), stencil(A), boundary(A), padding(A))
+Base.similar(A::StencilArray) =
+    StencilArray(similar(parent(A)), stencil(A), boundary(A), padding(A))
+Base.similar(A::StencilArray, ::Type{T}) where T =
+    StencilArray(similar(parent(A), T), stencil(A), boundary(A), padding(A))
 
 function Base.copy(src::StencilArray)
     cp = similar(src)
@@ -477,13 +484,11 @@ function Base.copy(src::StencilArray)
     return cp
 end
 
-function Adapt.adapt_structure(to, A::StencilArray{S}) where S
+function Adapt.adapt_structure(to, A::StencilArray)
     newparent = Adapt.adapt(to, parent(A))
     newstencil = Adapt.adapt(to, stencil(A))
-    StencilArray{S}(newparent, newstencil, boundary(A), padding(A))
+    StencilArray(newparent, newstencil, boundary(A), padding(A))
 end
-
-ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray{S}
 
 # Internals
 """
@@ -492,7 +497,7 @@ ConstructionBase.constructorof(::Type{<:StencilArray{S}}) where S = StencilArray
 Abstract supertype for `AbstractStencilArray` that wrap two arrays that
 switch places with each broadcast.
 """
-abstract type AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P} <: AbstractStencilArray{S,R,T,N,A,H,BC,P} end
+abstract type AbstractSwitchingStencilArray{R,T,N,A,S,BC,P} <: AbstractStencilArray{R,T,N,A,S,BC,P} end
 
 Base.parent(d::AbstractSwitchingStencilArray) = source(d)
 
@@ -502,11 +507,16 @@ source(A::AbstractStencilArray) = parent(A)
 dest(A::AbstractSwitchingStencilArray) = A.dest
 dest(A::AbstractStencilArray) = parent(A)
 
-radius(d::AbstractStencilArray{<:Any,R}) where R = R
+radius(d::AbstractStencilArray{R}) where R = R
 padval(d::AbstractStencilArray) = padval(boundary(d))
 
 """
     SwitchingStencilArray <: AbstractSwitchingStencilArray
+
+    SwitchingStencilArray(A::AbstractArray, stencil; 
+        boundary=Remove(zero(eltype(parent))),
+        padding=Conditional(),
+    )
 
 An `AbstractArray` with a [`Stencil`](@ref), a [`BoundaryCondition`](@ref), [`Padding`](@ref),
 and two array layers that are switched with each `broadcast_stencil` operation.
@@ -521,6 +531,15 @@ regular array - the `dest` array can be safely ignored.
 However, when using `mapstencil!` you need to use the output, not the original
 array. Switching does not happen in-place, but as a new returned array.
 
+## Arguments
+
+- `A`: an `AbstractArray`
+- `stencil`: a [`Stencil`](@ref).
+
+## Keywords
+
+$STENCILARRAY_KEYWORDS
+
 ## Example
 
 ```jldoctest
@@ -529,7 +548,7 @@ using Stencils, Statistics
 sa = SwitchingStencilArray(rand(10, 10), Moore(1); boundary=Wrap())
 sa .*= 2 # Broadcast works as usual
 mapstencil(mean, sa) # As does runing `mapstencils
-hood = stencil(sa, 5, 10) # And retreiving a stencil
+s = stencil(sa, 5, 10) # And retreiving a single stencil
 # But we can also run it in-place, here doing 10 iterations of mean blur:
 # Note: if you dont assign new variable with `A =`, the array will
 # not switch and will not be blurred.
@@ -542,17 +561,24 @@ end
 
 ```
 """
-struct SwitchingStencilArray{S,R,T,N,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} <: AbstractSwitchingStencilArray{S,R,T,N,A,H,BC,P}
+struct SwitchingStencilArray{
+    R,T,N,A<:AbstractArray{T,N},S<:Union{Stencil{R},Layered{R}},BC,P
+} <: AbstractSwitchingStencilArray{R,T,N,A,S,BC,P}
     source::A
     dest::A
-    stencil::H
+    stencil::S
     boundary::BC
     padding::P
-    function SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source::A, dest::A, h::H, bc::BC, padding::P) where {S,R,T,N,A,H,BC,P}
-        map(tuple_contents(S), _radii(Val{N}(), R)) do s, rs
-            max(map(abs, rs)...) < s || throw(ArgumentError("stencil radius is larger than array axis $s"))
+    function SwitchingStencilArray{R,T,N,A,S,BC,P}(
+        source::A, dest::A, stencil::S, boundary::BC, padding::P
+    ) where {R,T,N,A,S,BC,P}
+        size(source) == size(dest) || 
+            throw(ArgumentError("source and dest arrays must be the same size, got $(size(source)) and $(size(dest))"))
+        map(size(source), _radii(Val{N}(), R)) do s, rs
+            max(map(abs, rs)...) < s || 
+                throw(ArgumentError("stencil radius is larger than array axis $s"))
         end
-        return new{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
+        return new{R,T,N,A,S,BC,P}(source, dest, stencil, boundary, padding)
     end
 end
 
@@ -563,19 +589,17 @@ function SwitchingStencilArray(parent::AbstractArray{<:Any,N}, stencil=Window{1,
 ) where N
     SwitchingStencilArray(parent, stencil, boundary, padding)
 end
-# Get S from the parent size
 # Build the source and dest padded arrays
-function SwitchingStencilArray(parent::AbstractArray, hood::StencilOrLayered, bc, padding)
-    padded_source = pad_array(padding, bc, hood, parent)
-    padded_dest = pad_array(padding, bc, hood, parent)
+function SwitchingStencilArray(parent::AbstractArray, stencil::StencilOrLayered, bc, padding)
+    padded_source = pad_array(padding, bc, stencil, parent)
+    padded_dest = pad_array(padding, bc, stencil, parent)
     padded_dest = padded_source === padded_dest ? copy(padded_source) : padded_dest
-    S = Tuple{_size(padding, hood, padded_source)...}
-    return SwitchingStencilArray{S}(padded_source, padded_dest, hood, bc, padding)
+    return SwitchingStencilArray(padded_source, padded_dest, stencil, bc, padding)
 end
-function SwitchingStencilArray{S}(
-    source::A, dest::A, h::H, bc::BC, padding::P
-) where {S,A<:AbstractArray{T,N},H<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N}
-    SwitchingStencilArray{S,R,T,N,A,H,BC,P}(source, dest, h, bc, padding)
+function SwitchingStencilArray(
+    source::A, dest::A, stencil::S, boundary::BC, padding::P
+) where {A<:AbstractArray{T,N},S<:Union{Stencil{R},Layered{R}},BC,P} where {R,T,N}
+    SwitchingStencilArray{R,T,N,A,S,BC,P}(source, dest, stencil, boundary, padding)
 end
 
 """
@@ -583,15 +607,15 @@ end
 
 Swap the source and dest of a `SwitchingStencilArray`.
 """
-switch(A::SwitchingStencilArray{S}) where S =
-    SwitchingStencilArray{S}(dest(A), source(A), stencil(A), boundary(A), padding(A))
+switch(A::SwitchingStencilArray) =
+    SwitchingStencilArray(dest(A), source(A), stencil(A), boundary(A), padding(A))
 
 Base.parent(A::SwitchingStencilArray) = source(A)
 
-Base.similar(src::SwitchingStencilArray{S}) where {S} =
-    SwitchingStencilArray{S}(similar(source(src)), similar(dest(src)), stencil(src), boundary(src), padding(src))
-Base.similar(src::SwitchingStencilArray{S}, ::Type{T}) where {S,T} =
-    SwitchingStencilArray{S}(similar(source(src), T), similar(dest(src), T), stencil(src), boundary(src), padding(src))
+Base.similar(src::SwitchingStencilArray) =
+    SwitchingStencilArray(similar(source(src)), similar(dest(src)), stencil(src), boundary(src), padding(src))
+Base.similar(src::SwitchingStencilArray, ::Type{T}) where {T} =
+    SwitchingStencilArray(similar(source(src), T), similar(dest(src), T), stencil(src), boundary(src), padding(src))
 
 function Base.copy(src::SwitchingStencilArray)
     cp = similar(src)
@@ -600,10 +624,9 @@ function Base.copy(src::SwitchingStencilArray)
     return cp
 end
 
-function Adapt.adapt_structure(to, A::SwitchingStencilArray{S}) where S
+function Adapt.adapt_structure(to, A::SwitchingStencilArray)
     newsource = Adapt.adapt(to, A.source)
     newdest = Adapt.adapt(to, A.dest)
-    SwitchingStencilArray{S}(newsource, newdest, stencil(A), boundary(A), padding(A))
+    SwitchingStencilArray(newsource, newdest, stencil(A), boundary(A), padding(A))
 end
 
-ConstructionBase.constructorof(::Type{<:SwitchingStencilArray{S}}) where S = SwitchingStencilArray{S}

@@ -1,4 +1,5 @@
-using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
+using Stencils, Test, LinearAlgebra, Statistics, DimensionalData
+
 
 @testset "StencilArray" begin
     @testset "indices" begin
@@ -17,24 +18,24 @@ using Stencils, Test, LinearAlgebra, StaticArrays, Statistics, DimensionalData
         A = StencilArray(r, VonNeumann{3,1}(); padding=Conditional(), boundary=Remove(0.0));
         B = StencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
         C = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
-        SA = SwitchingStencilArray(r, Window{10,1}(); padding=Conditional(), boundary=Remove(0.0));
-        SB = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
-        SC = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
+        sA = SwitchingStencilArray(r, Window{10,1}(); padding=Conditional(), boundary=Remove(0.0));
+        sB = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:out}(), boundary=Remove(0.0));
+        sC = SwitchingStencilArray(r, Window{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
 
-        @test SA.source !== SA.dest
+        @test sA.source !== sA.dest
 
-        @test size(A) == size(parent(A)) == size(SA) == size(parent(SA)) == (100,)
-        @test size(B) == size(SB) == (100,)
-        @test size(parent(B)) == size(parent(SB)) == (120,)
-        @test size(C) == size(SC) == (80,)
-        @test size(parent(C)) == size(parent(SC)) == (100,)
+        @test size(A) == size(parent(A)) == size(sA) == size(parent(sA)) == (100,)
+        @test size(B) == size(sB) == (100,)
+        @test size(parent(B)) == size(parent(sB)) == (120,)
+        @test size(C) == size(sC) == (80,)
+        @test size(parent(C)) == size(parent(sC)) == (100,)
         
-        @test size(similar(A)) == size(similar(SA)) == (100,)
-        @test size(similar(B)) == size(similar(SB)) == (100,)
-        @test size(similar(C)) == size(similar(SC)) == (80,)
+        @test size(similar(A)) == size(similar(sA)) == (100,)
+        @test size(similar(B)) == size(similar(sB)) == (100,)
+        @test size(similar(C)) == size(similar(sC)) == (80,)
 
-        @test size(similar(B, 40)) == size(similar(SB, 40)) == (40,)
-        @test eltype(similar(B, Int)) == eltype(similar(SB, Int)) == Int
+        @test size(similar(B, 40)) == size(similar(sB, 40)) == (40,)
+        @test eltype(similar(B, Int)) == eltype(similar(sB, Int)) == Int
 
         D = StencilArray(r, Moore{10,1}(); padding=Halo{:in}(), boundary=Remove(0.0));
         D .= 0.0
