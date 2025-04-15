@@ -239,7 +239,7 @@ to fill a stencil for a particular location `stencil(A, I)`. It also has an
 `indices(A, I)` method to retreive array indices for the stencil, so you can use them to 
 write values into an array for the stencil shape around your specified center index.
 
-### SwitchingsStencilArray Example: rock-paper-scissors on a grid
+### `SwitchingStencilArray` Example: rock-paper-scissors on a grid
 
 Stencils.jl also provides a `SwitchingStencilArray` for use in contexts where multiple passes are 
 required. This may be a simple iterative filter, or a simplation like the below.
