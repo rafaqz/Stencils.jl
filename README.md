@@ -239,7 +239,11 @@ to fill a stencil for a particular location `stencil(A, I)`. It also has an
 `indices(A, I)` method to retreive array indices for the stencil, so you can use them to 
 write values into an array for the stencil shape around your specified center index.
 
-### Example: rock-paper-scissors on a grid
+### SwitchingsStencilArray Example: rock-paper-scissors on a grid
+
+Stencils.jl also provides a `SwitchingStencilArray` for use in contexts where multiple passes are 
+required. This may be a simple iterative filter, or a simplation like the below.
+
 <!-- This example adapted from https://discourse.julialang.org/t/seven-lines-of-julia-examples-sought/50416/166 -->
 
 ```julia
@@ -262,10 +266,3 @@ record(f, "animation.gif", 1:100) do i
 end
 ```
 ![animation](https://github.com/user-attachments/assets/d45e334e-9d4c-415d-89a3-b4c144b7a505)
-
-
-
-## Note
-
-Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, 
-and some coordination and changes may be required over 2023.
