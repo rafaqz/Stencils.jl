@@ -239,6 +239,32 @@ to fill a stencil for a particular location `stencil(A, I)`. It also has an
 `indices(A, I)` method to retreive array indices for the stencil, so you can use them to 
 write values into an array for the stencil shape around your specified center index.
 
+### Example: rock-paper-scissors on a grid
+<!-- This example adapted from https://discourse.julialang.org/t/seven-lines-of-julia-examples-sought/50416/166 -->
+
+```julia
+using Stencils, CairoMakie
+function nextvalue_rps(neighborhood)
+    dominant = mod1(neighborhood.center + 1, 3) # 3 beats 2, 2 beats 1, 1 beats 3
+    return count(==(dominant), neighborhood.neighbors) >= 3 ? dominant : neighborhood.center
+end
+
+ssa = SwitchingStencilArray(rand(1:3, 100, 100), Window(1); boundary = Wrap())
+
+f, a, p = heatmap(ssa; colormap = Makie.wong_colors()[1:3], axis = (; aspect = true))
+
+record(f, "animation.gif", 1:100) do i
+  global ssa
+  # Switch the stencil array and run the mapping function
+  ssa = mapstencil!(nextvalue_rps, ssa)
+  # Update the plot, since the SwitchingStencilArray _is_ an array
+  p.args[1][] = ssa
+end
+```
+![animation](https://github.com/user-attachments/assets/d45e334e-9d4c-415d-89a3-b4c144b7a505)
+
+
+
 ## Note
 
 Expect occasional API breakages, Stencils.jl is being extracted from DynamicGrids.jl, 
