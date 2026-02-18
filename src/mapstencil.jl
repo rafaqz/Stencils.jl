@@ -45,8 +45,20 @@ function _return_type(f::F, A::AbstractStencilArray{<:Any,T}, args...) where {F,
     emptyneighbors = _zero_values(T1, st)
     emptycenter = _zero_center(T1, st)
     S = typeof(rebuild(st, emptyneighbors, emptycenter))
-    return Base._return_type(f, Tuple{S,map(eltype, args)...})
+    arg_types = map(a -> _arg_return_type(a), args)
+    return Base._return_type(f, Tuple{S, arg_types...})
 end
+
+# For StencilArrays in args, return the stencil type; otherwise return eltype
+_arg_return_type(A::AbstractStencilArray{<:Any,T}) where T = begin
+    st = stencil(A)
+    bc = boundary(A)
+    T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
+    emptyneighbors = _zero_values(T1, st)
+    emptycenter = _zero_center(T1, st)
+    typeof(rebuild(st, emptyneighbors, emptycenter))
+end
+_arg_return_type(A::AbstractArray) = eltype(A)
 
 _zero_values(::Type{T}, ::Stencil{<:Any,<:Any,L}) where {T,L} = SVector{L,T}(ntuple(_ -> zero(T), L))
 _zero_center(::Type{T}, ::Stencil) where T = zero(T)
@@ -84,6 +96,8 @@ function mapstencil!(
 ) where F
     _checksizes((dest, source, args...))
     update_boundary!(source)
+    # Update boundaries for any StencilArray args
+    foreach(a -> a isa AbstractStencilArray && update_boundary!(a), args)
 
     backend = KernelAbstractions.get_backend(parent(source))
     kernel! = mapstencil_kernel!(backend)
@@ -95,9 +109,13 @@ end
 
 @kernel function mapstencil_kernel!(f::F, dest, source, args) where F
     I = @index(Global, Cartesian)
-    @inbounds dest[I] = f(stencil(source, I), map(a -> a[I], args)...)
+    @inbounds dest[I] = f(stencil(source, I), _getarg.(args, (I,))...)
     nothing
 end
+
+# Get stencil for AbstractStencilArray, otherwise just index
+@inline _getarg(a::AbstractStencilArray, I) = stencil(a, I)
+@inline _getarg(a::AbstractArray, I) = a[I]
 
 Base.@propagate_inbounds _arg_getindex(I, arg1, args...) = (arg1[I], _arg_getindex(I, args...)...)
 Base.@propagate_inbounds _arg_getindex(I) = ()
@@ -108,14 +126,4 @@ function _checksizes(sources::Tuple)
         size(s) === size(s1) || throw(ArgumentError("Source array sizes must match. Found: $(size(s1)) and $(size(s))"))
     end
     return nothing
-end
-
-# TODO These methods have unused variables and don't seem to be used anywhere
-function applystencil(f, hood, sources::Tuple, I)
-    hoods = map(s -> stencil(s, I), sources)
-    vals = map(s -> s[I], sources)
-    f(hoods)
-end
-function applystencil(f, hood, source::AbstractArray, I)
-    f(stencil(source, I))
 end

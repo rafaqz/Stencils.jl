@@ -308,3 +308,76 @@ end
     Scopy = copy(S)
     @test S == Scopy
 end
+
+@testset "multi-StencilArray mapstencil" begin
+    @testset "two StencilArrays" begin
+        A = Float64[1 2 3; 4 5 6; 7 8 9]
+        B = Float64[10 20 30; 40 50 60; 70 80 90]
+
+        sa_A = StencilArray(A, Moore{1}())
+        sa_B = StencilArray(B, Moore{1}())
+
+        # Sum of centers from both stencils
+        result = mapstencil(sa_A, sa_B) do hood_a, hood_b
+            center(hood_a) + center(hood_b)
+        end
+        @test result == A .+ B
+
+        # Sum of all neighbors from both
+        result2 = mapstencil(sa_A, sa_B) do hood_a, hood_b
+            sum(neighbors(hood_a)) + sum(neighbors(hood_b))
+        end
+        @test size(result2) == size(A)
+    end
+
+    @testset "SwitchingStencilArray with StencilArray" begin
+        mutable_arr = Float64[0 0 0; 0 1 0; 0 0 0]
+        readonly_arr = Float64[1 1 1; 1 0 1; 1 1 1]
+
+        ssa = SwitchingStencilArray(mutable_arr, Moore{1}())
+        sa = StencilArray(readonly_arr, Moore{1}())
+
+        # Simulate diffusion-like operation
+        for _ in 1:3
+            ssa = mapstencil!(ssa, sa) do hood_m, hood_r
+                c = center(hood_m)
+                # Add contribution from readonly array where neighbors are high
+                c + 0.1 * sum(neighbors(hood_r))
+            end
+        end
+
+        result = Array(ssa)
+        @test size(result) == size(mutable_arr)
+        # Center should have accumulated value
+        @test result[2, 2] > mutable_arr[2, 2]
+    end
+
+    @testset "three StencilArrays" begin
+        A = ones(5, 5)
+        B = 2 .* ones(5, 5)
+        C = 3 .* ones(5, 5)
+
+        sa_A = StencilArray(A, Moore{1}())
+        sa_B = StencilArray(B, Moore{1}())
+        sa_C = StencilArray(C, Moore{1}())
+
+        # All three get stencil access
+        result = mapstencil(sa_A, sa_B, sa_C) do hood_a, hood_b, hood_c
+            center(hood_a) + center(hood_b) + center(hood_c)
+        end
+        @test all(result[2:4, 2:4] .≈ 6.0)  # 1 + 2 + 3
+    end
+
+    @testset "mixed StencilArray and regular array" begin
+        A = Float64[1 2 3; 4 5 6; 7 8 9]
+        B = Float64[10 20 30; 40 50 60; 70 80 90]
+
+        sa_A = StencilArray(A, Moore{1}())
+        # B is regular array, should be indexed not stenciled
+
+        result = mapstencil(sa_A, B) do hood_a, b_val
+            center(hood_a) + b_val  # b_val is scalar at center
+        end
+        @test result == A .+ B
+    end
+end
