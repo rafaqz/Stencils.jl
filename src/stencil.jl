@@ -87,8 +87,8 @@ On `AbstractStencilArray` they will wrap and reflect depending on the boundary c
 of the array.
 """
 function indices end
-@inline indices(hood, I::CartesianIndex) = indices(hood, Tuple(I))
-@inline indices(hood, I::Int...) = indices(hood, I)
+@inline indices(hood::Stencil, I::CartesianIndex) = indices(hood, Tuple(I))
+@inline indices(hood::Stencil, I::Int...) = indices(hood, I)
 # Allow trailing indices - we can use a Stencil with N smaller than the array N
 @inline function indices(hood::Stencil{<:Any,N1}, I::NTuple{N2}) where {N1,N2} 
     map(I1 -> (I1..., I[N1+1:N2]...), indices(hood, I[1:N1])) 
@@ -250,14 +250,14 @@ macro stencil(name, description)
         struct $name{R,N,L,T} <: Stencil{R,N,L,T}
             neighbors::SVector{L,T}
             center::T
-            $name{R,N,L,T}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = new{R,N,L,T}(neighbors,center)
+            $name{R,N,L,T}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = new{R,N,L,T}(neighbors, center)
         end
     end
     func_exprs = quote
         
         # Filled stencils
-        $name{R,N,L}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors,center)
-        $name{R,N}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors,center)
+        $name{R,N,L}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors, center)
+        $name{R,N}(neighbors::StaticVector{L,T}, center::T) where {R,N,L,T} = $name{R,N,L,T}(neighbors, center)
         $name{R}(args::StaticVector, center) where R = $name{R,2}(args, center)
         $name(args::StaticVector, center; radius=1, ndims=2) = $name{radius,ndims}(args, center)
 
