@@ -19,7 +19,7 @@ export Remove, Use, Wrap, Reflect
 export Conditional, Halo
 
 export stencil, neighbors, center, offsets, indices, distances, kernelproduct, radius, diameter
-export mapstencil, mapstencil!, switch
+export mapstencil, mapstencil!, scatterstencil!, switch
 
 include("stencil.jl")
 include("stencils/window.jl")
