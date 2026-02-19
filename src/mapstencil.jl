@@ -39,24 +39,19 @@ function mapstencil(
 end
 
 function _return_type(f::F, A::AbstractStencilArray{<:Any,T}, args...) where {F,T}
-    st = stencil(A)
-    bc = boundary(A)
-    T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
-    emptyneighbors = _zero_values(T1, st)
-    emptycenter = _zero_center(T1, st)
-    S = typeof(rebuild(st, emptyneighbors, emptycenter))
-    arg_types = map(a -> _arg_return_type(a), args)
-    return Base._return_type(f, Tuple{S, arg_types...})
+    arg_types = map(_arg_return_type, (A, args...))
+    return Base._return_type(f, Tuple{arg_types...})
 end
 
 # For StencilArrays in args, return the stencil type; otherwise return eltype
-_arg_return_type(A::AbstractStencilArray{<:Any,T}) where T = begin
+function _arg_return_type(A::AbstractStencilArray{<:Any,T}) where T
     st = stencil(A)
     bc = boundary(A)
     T1 = bc isa Remove ? promote_type(T, typeof(padval(bc))) : T
     emptyneighbors = _zero_values(T1, st)
     emptycenter = _zero_center(T1, st)
-    typeof(rebuild(st, emptyneighbors, emptycenter))
+
+    return typeof(rebuild(st, emptyneighbors, emptycenter))
 end
 _arg_return_type(A::AbstractArray) = eltype(A)
 
