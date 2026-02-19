@@ -36,6 +36,7 @@ include("boundary.jl")
 include("padding.jl")
 include("array.jl")
 include("mapstencil.jl")
+include("scatterstencil.jl")
 
 end # Module Stencils
 
