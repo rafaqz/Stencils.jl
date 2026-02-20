@@ -381,3 +381,113 @@ end
         @test result == A .+ B
     end
 end
+
+@testset "scatterstencil!" begin
+    @testset "basic scatter with +" begin
+        # Each cell scatters 0.1 to all neighbors
+        dest = zeros(5, 5)
+        src = fill(1.0, 5, 5)
+        sa = StencilArray(src, Moore(1); boundary=Remove(0.0))
+
+        scatterstencil!(+, dest, sa) do hood
+            map(_ -> 0.1, neighbors(hood))
+        end
+
+        # Interior cells receive from 8 neighbors
+        @test dest[3, 3] ≈ 0.8
+        # Edge cells receive from 5 neighbors
+        @test dest[1, 3] ≈ 0.5
+        @test dest[3, 1] ≈ 0.5
+        # Corner cells receive from 3 neighbors
+        @test dest[1, 1] ≈ 0.3
+        @test dest[5, 5] ≈ 0.3
+    end
+
+    @testset "scatter with max" begin
+        dest = zeros(5, 5)
+        src = Float64[i + j for i in 1:5, j in 1:5]
+        sa = StencilArray(src, Moore(1); boundary=Remove(0.0))
+
+        # Each cell scatters its center value to all neighbors
+        scatterstencil!(max, dest, sa) do hood
+            c = center(hood)
+            map(_ -> c, neighbors(hood))
+        end
+
+        # Center [3,3] receives max from neighbors, highest is [4,4]=8
+        @test dest[3, 3] == 8.0
+        # Corner [1,1] receives max from [2,2]=4
+        @test dest[1, 1] == 4.0
+    end
+
+    @testset "directional scatter (water flow pattern)" begin
+        # Simulate downhill flow: only scatter to lower neighbors
+        dest = zeros(5, 5)
+        water = fill(1.0, 5, 5)
+        # Elevation: low in center (0), high at edges (corners=4)
+        dem = Float64[abs(i-3) + abs(j-3) for i in 1:5, j in 1:5]
+
+        water_sa = StencilArray(water, Moore(1); boundary=Remove(0.0))
+        dem_sa = StencilArray(dem, Moore(1); boundary=Remove(0.0))
+
+        scatterstencil!(+, dest, water_sa, dem_sa) do water_hood, dem_hood
+            c_water = center(water_hood)
+            c_dem = center(dem_hood)
+            # Only flow to lower neighbors
+            map(neighbors(dem_hood)) do n_dem
+                Δz = c_dem - n_dem
+                Δz > 0 ? c_water * 0.1 : 0.0
+            end
+        end
+
+        # Center [3,3] is lowest (dem=0), receives flow from higher neighbors
+        @test dest[3, 3] > 0.0
+        # Corners are highest (dem=4), don't receive flow (all neighbors are lower)
+        @test dest[1, 1] == 0.0
+        @test dest[5, 5] == 0.0
+    end
+
+    @testset "VonNeumann stencil" begin
+        dest = zeros(5, 5)
+        src = fill(1.0, 5, 5)
+        sa = StencilArray(src, VonNeumann(1); boundary=Remove(0.0))
+
+        scatterstencil!(+, dest, sa) do hood
+            map(_ -> 0.25, neighbors(hood))
+        end
+
+        # Interior cells receive from 4 neighbors (VonNeumann)
+        @test dest[3, 3] ≈ 1.0
+        # Edge cells receive from 3 neighbors
+        @test dest[1, 3] ≈ 0.75
+        # Corner cells receive from 2 neighbors
+        @test dest[1, 1] ≈ 0.5
+    end
+
+    @testset "larger radius" begin
+        dest = zeros(7, 7)
+        src = fill(1.0, 7, 7)
+        sa = StencilArray(src, Moore(2); boundary=Remove(0.0))
+
+        scatterstencil!(+, dest, sa) do hood
+            map(_ -> 0.01, neighbors(hood))
+        end
+
+        # Interior cell receives from 24 neighbors (5x5 - 1)
+        @test dest[4, 4] ≈ 0.24
+    end
+
+    @testset "SwitchingStencilArray" begin
+        src = fill(1.0, 5, 5)
+        ssa = SwitchingStencilArray(src, Moore(1); boundary=Remove(0.0))
+
+        result = scatterstencil!(+, ssa) do hood
+            map(_ -> 0.1, neighbors(hood))
+        end
+
+        # Should return switched array
+        @test result !== ssa
+        # Interior should have correct value
+        @test result[3, 3] ≈ 0.8
+    end
+end
