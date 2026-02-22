@@ -19,7 +19,7 @@ export Remove, Use, Wrap, Reflect
 export Conditional, Halo
 
 export stencil, neighbors, center, offsets, indices, distances, kernelproduct, radius, diameter
-export mapstencil, mapstencil!, scatterstencil!, switch
+export gatherstencil, gatherstencil!, mapstencil, mapstencil!, scatterstencil!, switch
 
 include("stencil.jl")
 include("stencils/window.jl")
@@ -35,7 +35,7 @@ include("stencils/named.jl")
 include("boundary.jl")
 include("padding.jl")
 include("array.jl")
-include("mapstencil.jl")
+include("gatherstencil.jl")
 include("scatterstencil.jl")
 
 end # Module Stencils
