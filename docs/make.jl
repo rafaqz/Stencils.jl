@@ -1,4 +1,6 @@
-using Documenter, Stencils
+using Documenter, Stencils, Statistics
+
+DocMeta.setdocmeta!(Stencils, :DocTestSetup, :(using Stencils, Statistics); recursive=true)
 
 makedocs(
     modules = [Stencils],
