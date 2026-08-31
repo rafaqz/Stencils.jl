@@ -133,8 +133,8 @@ end
 @inline function getneighbor(A::AbstractStencilArray, boundary::Remove, ::Conditional, I::Tuple)
     checkbounds(Bool, A, I...) ? (@inbounds A[I...]) : boundary.padval
 end
-# Wrap and Reflect are always inbounds
-@inline getneighbor(A::AbstractStencilArray, bounds::Union{Wrap,Reflect}, pad::Conditional, I::Tuple) =
+# Wrap, Reflect and Replicate are always inbounds
+@inline getneighbor(A::AbstractStencilArray, bounds::Union{Wrap,Reflect,Replicate}, pad::Conditional, I::Tuple) =
     unsafe_getindex(A, pad, bounded_index(A, bounds, pad, I)...)
 
 @inline function indices(A::AbstractStencilArray, I::Tuple)
@@ -159,6 +159,19 @@ end
             2 - i
         elseif i > s
             2 * s - i
+        else
+            i
+        end
+    end
+end
+@inline function bounded_index(
+    A::AbstractStencilArray, boundary::Replicate, padding::Conditional, I::Tuple
+)
+    map(I, size(A)) do i, s
+        if i < 1
+            1
+        elseif i > s
+            s
         else
             i
         end
@@ -233,7 +246,7 @@ update_boundary!(A::AbstractStencilArray{R}, ::Halo, ::Use) where {R} = A
 end
 
 @inline halo_val(A, boundary::Remove, I::CartesianIndex) = padval(boundary)
-@inline halo_val(A, boundary::Union{Wrap,Reflect}, I::CartesianIndex) = begin
+@inline halo_val(A, boundary::Union{Wrap,Reflect,Replicate}, I::CartesianIndex) = begin
     bI = bounded_index(A, boundary, Conditional(), Tuple(I))
     return A[bI...]
 end

@@ -14,7 +14,7 @@ export Stencil, Window, Rectangle, Kernel, Moore, VonNeumann, Positional, Layere
 
 export StencilArray, SwitchingStencilArray
 
-export Remove, Use, Wrap, Reflect
+export Remove, Use, Wrap, Reflect, Replicate
 
 export Conditional, Halo
 

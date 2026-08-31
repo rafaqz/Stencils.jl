@@ -104,6 +104,13 @@ end
     end
 end
 
+@inline function _scatter_to!(op, dest, ni, nj, ny, nx, val, ::Replicate)
+    # Clamp indices to the edge
+    ni = clamp(ni, 1, ny)
+    nj = clamp(nj, 1, nx)
+    @inbounds dest[ni, nj] = op(dest[ni, nj], val)
+end
+
 @inline function _scatter_to!(op, dest, ni, nj, ny, nx, val, ::Use)
     # Skip out-of-bounds (same as Remove for scatter)
     if 1 <= ni <= ny && 1 <= nj <= nx
