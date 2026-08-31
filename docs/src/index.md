@@ -63,6 +63,7 @@ Remove
 Use
 Wrap
 Reflect
+Replicate
 ```
 
 ## Padding

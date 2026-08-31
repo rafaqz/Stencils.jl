@@ -11,6 +11,10 @@ using Stencils, Test, LinearAlgebra, Statistics, DimensionalData
         @test indices(A, (1, 1)) == [(2, 2), (1, 2), (2, 2), (2, 1), (2, 1), (2, 2), (1, 2), (2, 2)]
         S = SwitchingStencilArray(zeros(4, 4), Moore(), boundary=Reflect(), padding=Conditional())
         @test indices(S, (1, 1)) == [(2, 2), (1, 2), (2, 2), (2, 1), (2, 1), (2, 2), (1, 2), (2, 2)]
+        A = StencilArray(zeros(4, 4), Moore(), boundary=Replicate(), padding=Conditional())
+        @test indices(A, (1, 1)) == [(1, 1), (1, 1), (2, 1), (1, 1), (2, 1), (1, 2), (1, 2), (2, 2)]
+        S = SwitchingStencilArray(zeros(4, 4), Moore(), boundary=Replicate(), padding=Conditional())
+        @test indices(S, (1, 1)) == [(1, 1), (1, 1), (2, 1), (1, 1), (2, 1), (1, 2), (1, 2), (2, 2)]
     end
 
     @testset "1d" begin
@@ -259,6 +263,57 @@ end
         end
     end
 
+    @testset "Replicate" begin
+        @testset "1d" begin
+            r = collect(1.0:5.0)
+            s = Window{1,1}()
+            A = StencilArray(r, s; padding=Conditional(), boundary=Replicate());
+            B = StencilArray(r, s; padding=Halo{:out}(), boundary=Replicate());
+            C = StencilArray(copy(r), s; padding=Halo{:in}(), boundary=Replicate());
+            SA = SwitchingStencilArray(copy(r), s; padding=Conditional(), boundary=Replicate());
+            SB = SwitchingStencilArray(copy(r), s; padding=Halo{:out}(), boundary=Replicate());
+            SC = SwitchingStencilArray(copy(r), s; padding=Halo{:in}(), boundary=Replicate());
+
+            @time A1 = gatherstencil(mean, A)
+            @time B1 = gatherstencil(mean, B)
+            @time C1 = gatherstencil(mean, C)
+            @time SA1 = gatherstencil!(mean, SA)
+            @time SB1 = gatherstencil!(mean, SB)
+            @time SC1 = gatherstencil!(mean, SC)
+            @test A1 == B1 == SA1 == SB1 ≈ [1.33333333, 2.0, 3.0, 4.0, 4.66666666]
+            @test C1 == SC1 ≈ [2.33333333, 3.0, 3.66666666]
+        end
+        @testset "2d" begin
+            r = (1.0:5.0) * (100.0:105.0)'
+            s = Window{1,2}()
+            A = StencilArray(r, s; padding=Conditional(), boundary=Replicate());
+            B = StencilArray(r, s; padding=Halo{:out}(), boundary=Replicate());
+            C = StencilArray(copy(r), s; padding=Halo{:in}(), boundary=Replicate());
+            SA = SwitchingStencilArray(copy(r), s; padding=Conditional(), boundary=Replicate());
+            SB = SwitchingStencilArray(copy(r), s; padding=Halo{:out}(), boundary=Replicate());
+            SC = SwitchingStencilArray(copy(r), s; padding=Halo{:in}(), boundary=Replicate());
+
+            @time A1 = gatherstencil(mean, A)
+            @time B1 = gatherstencil(mean, B)
+            @time C1 = gatherstencil(mean, C)
+            @time SA1 = gatherstencil!(mean, SA)
+            @time SB1 = gatherstencil!(mean, SB)
+            @time SC1 = gatherstencil!(mean, SC)
+            @test A1 == B1 == SA1 == SB1 ≈ [
+                133.77777777 134.66666666 136.0 137.33333333 138.66666666 139.555555555
+                200.66666666 202.0        204.0 206.0        208.0        209.333333333
+                301.0        303.0        306.0 309.0        312.0        314.0
+                401.33333333 404.0        408.0 412.0        416.0        418.666666666
+                468.22222222 471.33333333 476.0 480.66666666 485.33333333 488.444444444
+            ]
+            @test C1 == SC1
+            @test A1[3:end-2, 3:end-2] == C1[2:end-1, 2:end-1] == SC1[2:end-1, 2:end-1]
+
+            @test A1[2:end-1, 2:end-1] == B1[2:end-1, 2:end-1] == SA1[2:end-1, 2:end-1] == SB1[2:end-1, 2:end-1] == r[2:end-1, 2:end-1]
+            @test A1[2:end-1, 2:end-1] != C1
+        end
+    end
+
     @testset "Wrapper array types propagate" begin
         r = (1.0:5.0) * (100.0:105.0)'
         A = DimArray(r, (X(10:10:50), Y(1.0:6.0)))
@@ -401,6 +456,20 @@ end
         # Corner cells receive from 3 neighbors
         @test dest[1, 1] ≈ 0.3
         @test dest[5, 5] ≈ 0.3
+    end
+
+    @testset "Replicate scatters onto the edge" begin
+        # Scattering past the edge clamps back onto it, so no values are lost
+        dest = zeros(5, 5)
+        src = fill(1.0, 5, 5)
+        sa = StencilArray(src, Moore(1); boundary=Replicate())
+
+        scatterstencil!(+, dest, sa) do hood
+            map(_ -> 0.1, neighbors(hood))
+        end
+
+        @test sum(dest) ≈ 25 * 8 * 0.1
+        @test all(≈(0.8), dest)
     end
 
     @testset "scatter with max" begin

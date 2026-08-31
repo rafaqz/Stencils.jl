@@ -51,6 +51,16 @@ back to the source cell of the grid.
 """
 struct Reflect <: BoundaryCondition end
 
+"""
+    Replicate <: BoundaryCondition
+
+    Replicate()
+
+[`BoundaryCondition`](@ref) flag to clamp coordinates that overflow grid
+boundaries to the nearest edge cell of the grid.
+"""
+struct Replicate <: BoundaryCondition end
+
 # From DynamicGrids.jl
 
 # See interface docs
