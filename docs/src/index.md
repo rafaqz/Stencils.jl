@@ -3,8 +3,10 @@
 Main functions
 
 ```@docs
-mapstencil
-mapstencil!
+gatherstencil
+gatherstencil!
+scatterstencil
+scatterstencil!
 ```
 
 ## Stencils
